@@ -83,7 +83,7 @@ struct PlaylistAllView: View {
                         let newPlaylist = Playlist(
                             id: UUID(),
                             name: newPlaylistName,
-                            description: "",
+                            description: "설명을 입력하세요",
                             createdDate: Date(),  // 현재 날짜로 설정
                             videoIds: [],
                             thumbnailURL: nil,

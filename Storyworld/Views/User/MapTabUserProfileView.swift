@@ -51,7 +51,7 @@ struct MapTabUserProfileView: View {
                     Image(systemName: "arrow.up.square.fill")
                         .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
                         .font(.system(size: 12))
-                    Text("Lv.\(calculateLevel(from: userService.user?.experience ?? 0))")
+                    Text("Lv.\(LevelManager.shared.calculateLevel(from: userService.user?.experience ?? 0))")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
                 }
@@ -64,20 +64,21 @@ struct MapTabUserProfileView: View {
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
                 }
-                HStack(spacing: 4) {
-                    Image(systemName: "dollarsign.circle.fill")
-                        .foregroundColor(Color(UIColor(hex:"#FFD700")))
-                        .font(.system(size: 12))
-                    Text("\(userService.user?.balance ?? 0)")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
-                }
-
+                
                 HStack(spacing: 4) {
                     Image(systemName: "diamond.fill")
                         .foregroundColor(Color(UIColor(hex:"#00FFFF")))
                         .font(.system(size: 12))
                     Text("\(userService.user?.gems ?? 0)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
+                }
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "dollarsign.circle.fill")
+                        .foregroundColor(Color(UIColor(hex:"#FFD700")))
+                        .font(.system(size: 12))
+                    Text("\(userService.user?.balance ?? 0)")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
                 }
@@ -88,9 +89,5 @@ struct MapTabUserProfileView: View {
         .cornerRadius(12)
         .padding(.horizontal, 16)
         .padding(.top, 4)
-    }
-    
-    private func calculateLevel(from experience: Int) -> Int {
-        return 1 + (experience / 1000)  // 1000 경험치당 1레벨
     }
 }

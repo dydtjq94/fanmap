@@ -50,6 +50,9 @@ struct PlaylistDetailedView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         // 타이틀 수정 버튼
                         Button(action: {
+                            let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
+                            feedbackGenerator.prepare()
+                            feedbackGenerator.impactOccurred()
                             updatedTitle = currentPlaylist.name  // playlist → currentPlaylist로 변경
                             showTitleAlert = true
                         }) {
@@ -62,7 +65,10 @@ struct PlaylistDetailedView: View {
                         
                         // 설명 수정 버튼
                         Button(action: {
-                            updatedDescription = currentPlaylist.description ?? ""
+                            let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
+                            feedbackGenerator.prepare()
+                            feedbackGenerator.impactOccurred()
+                            updatedDescription = currentPlaylist.description ?? "설명을 입력하세요"
                             showDescriptionAlert = true
                         }) {
                             Text(currentPlaylist.description ?? "설명을 입력하세요")

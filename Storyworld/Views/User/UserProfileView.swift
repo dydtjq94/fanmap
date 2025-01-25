@@ -46,7 +46,7 @@ struct UserProfileView: View {
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                                 .font(.system(size: 14))
 
-                            Text("Lv.\(calculateLevel(from: user.experience))")
+                            Text("Lv.\(LevelManager.shared.calculateLevel(from: user.experience))")
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                         }
@@ -61,6 +61,15 @@ struct UserProfileView: View {
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                         }
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "diamond.fill")
+                                .foregroundColor(Color(UIColor(hex: "#00FFFF")))
+                                .font(.system(size: 14))
+                            Text("\(user.gems)")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
+                        }
 
                         HStack(spacing: 4) {
                             Image(systemName: "dollarsign.circle.fill")
@@ -71,14 +80,6 @@ struct UserProfileView: View {
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                         }
 
-                        HStack(spacing: 4) {
-                            Image(systemName: "diamond.fill")
-                                .foregroundColor(Color(UIColor(hex: "#00FFFF")))
-                                .font(.system(size: 14))
-                            Text("\(user.gems)")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
-                        }
                         Spacer()
                     }
                     .padding(.bottom, 4)
@@ -99,10 +100,5 @@ struct UserProfileView: View {
             ProgressView("Loading user data...")
                 .padding()
         }
-    }
-
-    // 경험치를 바탕으로 레벨 계산
-    private func calculateLevel(from experience: Int) -> Int {
-        return 1 + (experience / 1000)  // 1000 경험치당 1레벨
     }
 }
