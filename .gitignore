@@ -1,8 +1,10 @@
-# Xcode 관련 불필요한 파일 및 폴더
+# macOS 시스템 파일
 .DS_Store
 *.swp
 *.swo
 *.xcuserstate
+
+# Xcode 관련 설정 파일 (사용자별 설정)
 xcuserdata/
 *.xcworkspace
 *.xcscmblueprint
@@ -14,11 +16,6 @@ xcuserdata/
 *.xcdebugger/
 *.xcodeproj/project.xcworkspace/
 *.xcodeproj/xcuserdata/
-*.pbxuser
-*.mode1v3
-*.mode2v3
-*.perspectivev3
-*.hmap
 
 # 빌드 및 파생 데이터
 DerivedData/
@@ -29,55 +26,44 @@ Build/
 *.dSYM
 *.xcarchive
 
-# Swift Package Manager 관련 파일
+# Swift Package Manager (SPM) 관련
 .build/
 .swiftpm/
-.project.xcworkspace/
-Packages/
-Package.pins
 Package.resolved
-*.xcodeproj
 
-# Carthage 및 Cocoapods 관련 파일
-Carthage/Checkouts
-Carthage/Build
-Pods/
-Podfile.lock
-pod-install.sh
-
-# 환경 변수 및 API 키 보안
+# 환경 변수 및 보안 정보
 .env
 *.xcconfig
 Secrets.xcconfig
 Config.xcconfig
-YourApp/Access.swift  # API 키를 포함할 가능성이 있는 파일
-YourApp/Info.plist    # 민감한 정보 포함 시
 
-# Firebase 관련 파일
+# Firebase 관련 파일 (사용 시 추가)
 GoogleService-Info.plist
-*.plist~
 
-# Fastlane 관련 파일 (빌드 및 배포 자동화 도구)
+# Fastlane (빌드 자동화 도구)
 fastlane/report.xml
 fastlane/Preview.html
-fastlane/screenshots/**/*.png
+fastlane/screenshots
 fastlane/test_output
+fastlane/report.xml
 fastlane/metadata
-
-# Playgrounds
-timeline.xctimeline
-playground.xcworkspace
 
 # Logs 및 임시 파일
 *.log
 *.tmp
 
-# Simulator 관련 디렉토리
-*.simruntime
-*.simdevicetype
-*.simctl
-
 # XCTest 관련
 *.xctestoutput
 *.xcresult
 *.xctrace
+
+# 시뮬레이터 관련 파일
+*.simruntime
+*.simdevicetype
+*.simctl
+
+# 기타 macOS 및 Xcode 생성 파일
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
