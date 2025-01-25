@@ -107,7 +107,7 @@ final class ScanManager {
     
     private func startScanAnimation(completion: @escaping () -> Void) {
         let scanLineWidth: CGFloat = 4.0
-        let scanDuration: TimeInterval = 2.5
+        let scanDuration: TimeInterval = 2.0
         let fadeOutDelay: TimeInterval = 0.2  // 사라지기 전 대기 시간
         let mapWidth = mapView.frame.width
 
@@ -179,8 +179,6 @@ final class ScanManager {
         }
     }
 
-
-    
     private func removePulsingCirclesAfterScan() {
         DispatchQueue.main.asyncAfter(deadline: .now()) {
             for circle in self.scanCircles {
