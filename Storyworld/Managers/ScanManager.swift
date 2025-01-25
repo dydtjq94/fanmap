@@ -108,7 +108,9 @@ final class ScanManager {
     private func startScanAnimation(completion: @escaping () -> Void) {
         let scanLineWidth: CGFloat = 4.0
         let scanDuration: TimeInterval = 2.0
-        let fadeOutDelay: TimeInterval = 0.2  // 사라지기 전 대기 시간
+        let fadeOutDelay: TimeInterval = 0.1  // 사라지기 전 대기 시간
+        let fadeOutDuration: TimeInterval = 0.3  // 사라지는 시간 (부드럽게 사라지게)
+
         let mapWidth = mapView.frame.width
 
         let overlayView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: mapView.frame.height))
@@ -124,14 +126,21 @@ final class ScanManager {
             scanView.frame.origin.x = mapWidth
             overlayView.frame.size.width = mapWidth
         }, completion: { _ in
-            // 딜레이 후 즉시 제거
+            // 딜레이 후 부드럽게 사라짐
             DispatchQueue.main.asyncAfter(deadline: .now() + fadeOutDelay) {
-                overlayView.removeFromSuperview()
-                scanView.removeFromSuperview()
-                completion()
+                UIView.animate(withDuration: fadeOutDuration, animations: {
+                    // alpha 값을 0으로 변경하여 부드럽게 사라짐
+                    overlayView.alpha = 0.0
+                    scanView.alpha = 0.0
+                }, completion: { _ in
+                    // 애니메이션이 끝난 후 뷰 제거
+                    overlayView.removeFromSuperview()
+                    scanView.removeFromSuperview()
+                    completion()  // 완료 시 콜백 호출
+                })
             }
         })
-        
+
         addPulsingCirclesDuringScan(scanDuration: scanDuration)
 
         // 원 제거 작업도 일정 시간 후 실행
@@ -198,7 +207,7 @@ final class ScanManager {
         isZooming = true
         print("🔍 줌 시작: \(zoomLevel) 레벨로 이동 중...")
 
-        mapView.camera.ease(to: CameraOptions(zoom: zoomLevel), duration: 0.7, curve: .easeInOut) { [weak self] position in
+        mapView.camera.ease(to: CameraOptions(zoom: zoomLevel), duration: 0.3, curve: .easeInOut) { [weak self] position in
             guard let self = self else { return }
 
             if position == .end {
@@ -207,7 +216,7 @@ final class ScanManager {
                 completion()
             } else {
                 print("❌ 줌 실패: \(zoomLevel) 재시도 중...")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     self.isZooming = false  // 실패 시 플래그 해제
                     self.performZoom(to: zoomLevel, completion: completion)
                 }
