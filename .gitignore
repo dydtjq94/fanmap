@@ -1,62 +1,83 @@
-# Xcode
-#
-# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
-
-## User settings
+# Xcode 관련 불필요한 파일 및 폴더
+.DS_Store
+*.swp
+*.swo
+*.xcuserstate
 xcuserdata/
-
-## Obj-C/Swift specific
+*.xcworkspace
+*.xcscmblueprint
+.idea/
+*.lock
+*.moved-aside
+*.xcuserdatad*
+*.xcplugindata/
+*.xcdebugger/
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
 *.hmap
 
-## App packaging
+# 빌드 및 파생 데이터
+DerivedData/
+Build/
 *.ipa
+*.app
 *.dSYM.zip
 *.dSYM
+*.xcarchive
 
-## Playgrounds
-timeline.xctimeline
-playground.xcworkspace
-
-# Swift Package Manager
-#
-# Add this line if you want to avoid checking in source code from Swift Package Manager dependencies.
-# Packages/
-# Package.pins
-# Package.resolved
-# *.xcodeproj
-#
-# Xcode automatically generates this directory with a .xcworkspacedata file and xcuserdata
-# hence it is not needed unless you have added a package configuration file to your project
-# .swiftpm
-
+# Swift Package Manager 관련 파일
 .build/
+.swiftpm/
+.project.xcworkspace/
+Packages/
+Package.pins
+Package.resolved
+*.xcodeproj
 
-# CocoaPods
-#
-# We recommend against adding the Pods directory to your .gitignore. However
-# you should judge for yourself, the pros and cons are mentioned at:
-# https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control
-#
-# Pods/
-#
-# Add this line if you want to avoid checking in source code from the Xcode workspace
-# *.xcworkspace
+# Carthage 및 Cocoapods 관련 파일
+Carthage/Checkouts
+Carthage/Build
+Pods/
+Podfile.lock
+pod-install.sh
 
-# Carthage
-#
-# Add this line if you want to avoid checking in source code from Carthage dependencies.
-# Carthage/Checkouts
+# 환경 변수 및 API 키 보안
+.env
+*.xcconfig
+Secrets.xcconfig
+Config.xcconfig
+YourApp/Access.swift  # API 키를 포함할 가능성이 있는 파일
+YourApp/Info.plist    # 민감한 정보 포함 시
 
-Carthage/Build/
+# Firebase 관련 파일
+GoogleService-Info.plist
+*.plist~
 
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo.
-# Instead, use fastlane to re-generate the screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/#source-control
-
+# Fastlane 관련 파일 (빌드 및 배포 자동화 도구)
 fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+fastlane/metadata
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Logs 및 임시 파일
+*.log
+*.tmp
+
+# Simulator 관련 디렉토리
+*.simruntime
+*.simdevicetype
+*.simctl
+
+# XCTest 관련
+*.xctestoutput
+*.xcresult
+*.xctrace
