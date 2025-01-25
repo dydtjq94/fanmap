@@ -244,7 +244,7 @@ final class DropController: UIViewController {
     }
     
     private func fetchVideosAndAnimate() {
-        CollectionService.shared.fetchVideos(for: genre, rarity: rarity) { [weak self] result in
+        CollectionService.shared.fetchUncollectedVideos(for: genre, rarity: rarity) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let filteredVideos):

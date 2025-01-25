@@ -95,7 +95,7 @@ final class VideoLayerMapManager {
                         StyleColor(UIColor.gray).rawValue // 기본값
                        )
                 )
-                circleLayer.circleRadius = .constant(16.0)
+                circleLayer.circleRadius = .constant(14.0)
                 circleLayer.circleOpacity = .constant(1.0)
                 
                 // Symbol Layer 설정
@@ -107,7 +107,7 @@ final class VideoLayerMapManager {
                 // Symbol Layer 설정
                 var symbolLayer = SymbolLayer(id: symbolLayerId, source: sourceId)
                 symbolLayer.iconImage = .constant(.name(iconName)) // 등록된 SF Symbol 아이디 사용
-                symbolLayer.iconSize = .constant(0.4) // 아이콘 크기 조정
+                symbolLayer.iconSize = .constant(0.35) // 아이콘 크기 조정
                 symbolLayer.iconAnchor = .constant(.center) // 아이콘 위치
                 symbolLayer.iconAllowOverlap = .constant(true) // 중첩 허용
                 symbolLayer.iconIgnorePlacement = .constant(true) // 배치 무시

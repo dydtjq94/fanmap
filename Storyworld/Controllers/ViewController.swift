@@ -22,6 +22,8 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
     private var notificationManager: NotificationManager? // NotificationManager 추가
     private var cameraManager: CameraManager? // CameraManager 추가
     private var mapStyleManager: MapStyleManager? // StyleManager 추가
+    private var scanManager: ScanManager?
+    
     private var lastBackgroundTime: Date? // 마지막 백그라운드 전환 시각
     
     private var isLocationPermissionHandled = false // 권한 처리 여부 확인 변수
@@ -32,10 +34,19 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         setupMapView()
         setupLocationManager()
         
+        scanManager = ScanManager(
+            mapView: mapView,
+            tileManager: tileManager,
+            tileService: tileService,
+            videoService: videoService,
+            videoController: videoController!
+        )
+        
         // NotificationManager 초기화
         notificationManager = NotificationManager(
             onScanButtonTapped: { [weak self] in
-                self?.handleScanButtonTapped()
+                self?.scanManager?.handleScanButtonTapped()
+                self?.reloadLocationPuck()
             },
             onClearCacheTapped: { [weak self] in
                 self?.handleClearCacheTapped()
@@ -92,40 +103,6 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         view.addSubview(mapView)
     }
     
-    // Handle Scan Button Tapped
-    @objc private func handleScanButtonTapped() {
-        let firstZoom = Constants.Numbers.firstZoom
-        let finalZoom = Constants.Numbers.finalZoom
-        performZoom(to: firstZoom) { [weak self] in
-            guard let self = self else { return }
-            
-            let centerCoordinate = self.mapView.mapboxMap.cameraState.center
-            
-            // 타일 데이터 로드 및 Circle 레이어 추가
-            self.loadTilesAndAddCircles(at: centerCoordinate, isScan: true)
-            
-            
-            reloadLocationPuck()
-            
-            // 작업 완료 후 줌 레벨 복구
-            self.performZoom(to: finalZoom) {
-                print("✅ Zoom 레벨이 15.0으로 복구되었습니다.")
-            }
-        }
-    }
-    
-    // Zoom 설정 및 복구를 함께 처리
-    private func performZoom(to zoomLevel: Double, completion: @escaping () -> Void) {
-        // Zoom 설정 (애니메이션 포함)
-        mapView.camera.ease(
-            to: CameraOptions(zoom: zoomLevel),
-            duration: 0.5, // 애니메이션 시간
-            curve: .easeInOut
-        ) { _ in
-            print("✅ Zoom 레벨이 \(zoomLevel)으로 설정되었습니다.")
-            completion() // 줌 레벨 변경이 완료된 후 작업 수행
-        }
-    }
     @objc private func handleClearCacheTapped() {
         tileCacheManager.clearCache()
     }
@@ -220,7 +197,6 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
     
     /// 타일 데이터 로드 및 Circle 레이어 추가 함수
     private func loadTilesAndAddCircles(at coordinate: CLLocationCoordinate2D, isScan: Bool = false) {
-        // 현재 보이는 타일 가져오기
         let visibleTiles = tileManager.tilesInRange(center: coordinate)
         print("📍 현재 보이는 타일: \(visibleTiles.count)개")
         
@@ -231,20 +207,28 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         
         for tile in visibleTiles {
             if let tileInfo = tileService.getTileInfo(for: tile) {
-                // Circle 데이터를 기반으로 레이어 추가 (이미 존재하는 데이터)
-                videoController.videoLayerMapManager.addGenreCircles(
-                    data: tileInfo.layerData,
-                    userLocation: coordinate,
-                    isScan: isScan
-                )
+                if tileInfo.isVisible {
+                    // 이미 그려진 타일이므로 건너뛰기
+                    print("✔️ 이미 추가된 타일: \(tile.toKey()), isVisible: \(tileInfo.isVisible)")
+                    continue
+                } else {
+                    print("🔄 기존 타일 업데이트: \(tile.toKey())")
+                    tileService.updateTileVisibility(for: tile, isVisible: true)
+                    
+                    videoController.videoLayerMapManager.addGenreCircles(
+                        data: tileInfo.layerData,
+                        userLocation: coordinate,
+                        isScan: isScan
+                    )
+                }
             } else {
                 print("➕ 새로운 타일 발견: \(tile.toKey())")
                 
-                // 새 CircleData 생성
                 let newCircleData = videoService.createFilteredCircleData(visibleTiles: [tile], tileManager: tileManager)
-
+                
+                // 새로운 타일 저장 및 isVisible을 true로 설정
                 tileService.saveTileInfo(for: tile, layerData: newCircleData, isVisible: true)
-
+                
                 videoController.videoLayerMapManager.addGenreCircles(
                     data: newCircleData,
                     userLocation: coordinate,

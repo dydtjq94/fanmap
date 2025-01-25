@@ -51,16 +51,7 @@ struct MapTabUserProfileView: View {
                     Image(systemName: "arrow.up.square.fill")
                         .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
                         .font(.system(size: 12))
-                    Text("Lv.\(LevelManager.shared.calculateLevel(from: userService.user?.experience ?? 0))")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
-                }
-
-                HStack(spacing: 4) {
-                    Image(systemName: "film.stack.fill")
-                        .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
-                        .font(.system(size: 12))
-                    Text("\(userService.user?.collectedVideos.count ?? 0)")
+                    Text("Lv. \(UserStatusManager.shared.calculateLevel(from: userService.user?.experience ?? 0))")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
                 }

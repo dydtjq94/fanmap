@@ -16,7 +16,9 @@ class UserService: ObservableObject {
     func initializeUserIfNeeded() {
         if let savedUser = loadUser() {
             print("✅ User loaded from UserDefaults: \(savedUser.nickname)")
-            self.user = savedUser
+            DispatchQueue.main.async {
+                self.user = savedUser
+            }
         } else {
             print("⏩ No existing user found, creating new user...")
             let newUser = User(
@@ -30,7 +32,9 @@ class UserService: ObservableObject {
                 playlists: []
             )
             saveUser(newUser)
-            self.user = newUser
+            DispatchQueue.main.async {
+                self.user = newUser
+            }
             print("New user created: \(newUser)")
         }
     }
@@ -59,5 +63,30 @@ class UserService: ObservableObject {
         } catch {
             print("Error encoding user: \(error)")
         }
+    }
+    
+    func rewardUser(for video: Video) {
+        guard var user = user else { return }
+        
+        print("수집 전 경험치 \(user.experience), 코인 \(user.balance)")
+        
+        // 등급에 따른 보상 계산
+        let experienceReward = UserStatusManager.shared.getExperienceReward(for: video.rarity)
+        let coinReward = UserStatusManager.shared.getCoinReward(for: video.rarity)
+        
+        user.experience += experienceReward
+        user.balance += coinReward
+        
+        print("수집 후 경험치 \(user.experience), 코인 \(user.balance)")
+        
+        // 레벨 업데이트
+        let newLevel = UserStatusManager.shared.calculateLevel(from: user.experience)
+        print("🎉 경험치 획득: \(experienceReward), 코인 획득: \(coinReward)")
+        print("🏆 새로운 레벨: \(newLevel)")
+        
+        // 변경된 사용자 정보를 즉시 저장
+        
+        print("새로운 유저 정보: \(user)")
+        self.saveUser(user)
     }
 }

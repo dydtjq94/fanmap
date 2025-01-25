@@ -7,7 +7,7 @@
 
 import UIKit
 
-enum VideoGenre: String, Codable {
+enum VideoGenre: String, Codable, CaseIterable {
     case entertainment = "entertainment"
     case talk = "talk"
     case music = "music"

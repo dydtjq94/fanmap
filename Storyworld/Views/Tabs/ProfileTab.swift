@@ -31,6 +31,9 @@ struct ProfileTab: View {
             .padding(.bottom, 32) // 하단 패딩 적용
             .padding(.top, 24)
         }
+        .refreshable {
+            userService.initializeUserIfNeeded()
+        }
         .background(Color(UIColor(hex:"#121212")))
     }
 }

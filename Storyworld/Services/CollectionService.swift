@@ -15,8 +15,20 @@ class CollectionService {
         userService.initializeUserIfNeeded()
     }
     
-    func fetchVideos(for genre: VideoGenre, rarity: VideoRarity, completion: @escaping (Result<[Video], Error>) -> Void) {
-        let filteredVideos = VideoDummyData.sampleVideos.filter { $0.genre == genre && $0.rarity == rarity }
+    func fetchUncollectedVideos(for genre: VideoGenre, rarity: VideoRarity, completion: @escaping (Result<[Video], Error>) -> Void) {
+        guard let currentUser = UserService.shared.user else {
+            completion(.failure(NSError(domain: "User not found", code: 401, userInfo: nil)))
+            return
+        }
+
+        let collectedVideoIds = currentUser.collectedVideos.map { $0.video.videoId }
+
+        let filteredVideos = VideoDummyData.sampleVideos.filter { video in
+            video.genre == genre &&
+            video.rarity == rarity &&
+            !collectedVideoIds.contains(video.videoId)
+        }
+
         DispatchQueue.main.async {
             if filteredVideos.isEmpty {
                 completion(.failure(NSError(domain: "No videos found", code: 404, userInfo: nil)))
@@ -35,19 +47,27 @@ class CollectionService {
     
     // 새 영상 추가 및 저장
     func saveCollectedVideo(_ video: Video) {
-        guard var user = userService.user else { return }
+        guard var currentUser = userService.user else { return }
         
-        if !user.collectedVideos.contains(where: { $0.video.videoId == video.videoId }) {
+        if !currentUser.collectedVideos.contains(where: { $0.video.videoId == video.videoId }) {
             let newCollectedVideo = CollectedVideo(
                 video: video,
                 collectedDate: Date(),
                 playlistIds: [],
                 isFavorite: false,
                 userTags: nil,
-                ownerId: UUID().uuidString
+                ownerId: currentUser.nickname
             )
-            user.collectedVideos.append(newCollectedVideo)
-            userService.saveUser(user)
+            
+            // 수집 목록 추가
+            currentUser.collectedVideos.append(newCollectedVideo)
+            
+            // 업데이트된 user 객체를 저장
+            userService.user = currentUser
+            
+            // 보상 지급
+            self.userService.rewardUser(for: video)
+            
             print("✅ 영상이 수집되었습니다: \(video.title)")
         } else {
             print("⚠️ 이미 존재하는 영상: \(video.videoId)")

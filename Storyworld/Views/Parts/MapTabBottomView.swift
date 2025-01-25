@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct MapTabBottomView: View {
+    @State private var isScanButtonDisabled = false  // 버튼 상태를 관리하는 상태 변수
+
     var body: some View {
         HStack(alignment: .center) {
             Button(action: {
@@ -21,7 +23,7 @@ struct MapTabBottomView: View {
                     .frame(width: 36, height: 36)
                     .background(Color(UIColor(hex:"#1B1B1B")))
                     .clipShape(Circle())
-                    .shadow(color: Color.red.opacity(0.3), radius: 10, x: 0, y: 0)
+                    .shadow(color: Color(UIColor(hex:"6aebaf")).opacity(0.3), radius: 10, x: 0, y: 0)
             }
             Spacer()
             Button(action: {
@@ -35,8 +37,9 @@ struct MapTabBottomView: View {
                     .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
                     .background(Color(UIColor(hex:"#1B1B1B")))
                     .cornerRadius(16)
-                    .shadow(color: Color.red.opacity(0.3), radius: 10, x: 0, y: 0)
+                    .shadow(color: Color(UIColor(hex:"6aebaf")).opacity(0.3), radius: 10, x: 0, y: 0)
             }
+            .disabled(isScanButtonDisabled)  // 버튼 비활성화 처리
             Spacer()
             Color.clear
                 .frame(width: 36, height: 36)
@@ -44,6 +47,16 @@ struct MapTabBottomView: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
         .padding(.bottom, 24)
+    }
+
+    // 스캔 시작 전 버튼 비활성화
+    func disableScanButton() {
+        isScanButtonDisabled = true
+    }
+
+    // 스캔 완료 후 버튼 활성화
+    func enableScanButton() {
+        isScanButtonDisabled = false
     }
 }
 

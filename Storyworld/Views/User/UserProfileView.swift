@@ -9,7 +9,11 @@ import SwiftUI
 
 struct UserProfileView: View {
     @EnvironmentObject var userService: UserService
-
+    @State private var isEditingNickname = false
+    @State private var isEditingBio = false
+    @State private var editedNickname = ""
+    @State private var editedBio = ""
+    
     var body: some View {
         if let user = userService.user {
             HStack(alignment: .center, spacing: 16) {
@@ -33,62 +37,114 @@ struct UserProfileView: View {
                         .shadow(radius: 5)
                 }
                 VStack(alignment: .leading) {
-                    // 닉네임
-                    Text(user.nickname)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.bottom, 2)
-
-                    HStack(spacing: 12) {
+                    // 닉네임 수정 버튼
+                    Button(action: {
+                        let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
+                        feedbackGenerator.prepare()
+                        feedbackGenerator.impactOccurred()
+                        editedNickname = userService.user?.nickname ?? "Guest"
+                        isEditingNickname = true
+                    }) {
+                        Text(userService.user?.nickname ?? "Guest")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.bottom, 2)
+                    
+                    
+                    HStack(spacing: 8) {
                         // 레벨 섹션
-                        HStack(spacing: 4) {
+                        HStack(spacing: 2) {
                             Image(systemName: "arrow.up.square.fill")
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
-                                .font(.system(size: 14))
-
-                            Text("Lv.\(LevelManager.shared.calculateLevel(from: user.experience))")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
-                        }
-
-                        // 수집한 영상 수 섹션
-                        HStack(spacing: 4) {
-                            Image(systemName: "film.stack.fill")
-                                .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
-                                .font(.system(size: 14))
-
-                            Text("\(user.collectedVideos.count)")
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.system(size: 12))
+                            
+                            Text("Lv. \(UserStatusManager.shared.calculateLevel(from: userService.user?.experience ?? 0))")
+                                .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                         }
                         
-                        HStack(spacing: 4) {
+                        // 수집한 영상 수 섹션
+                        HStack(spacing: 2) {
+                            Image(systemName: "film.stack.fill")
+                                .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
+                                .font(.system(size: 12))
+                            
+                            Text("\(userService.user?.collectedVideos.count ?? 0)")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
+                        }
+                        
+                        HStack(spacing: 2) {
                             Image(systemName: "diamond.fill")
                                 .foregroundColor(Color(UIColor(hex: "#00FFFF")))
-                                .font(.system(size: 14))
-                            Text("\(user.gems)")
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.system(size: 12))
+                            Text("\(userService.user?.gems ?? 0)")
+                                .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                         }
-
-                        HStack(spacing: 4) {
+                        
+                        HStack(spacing: 2) {
                             Image(systemName: "dollarsign.circle.fill")
                                 .foregroundColor(Color(UIColor(hex: "#FFD700")))
-                                .font(.system(size: 14))
-                            Text("\(user.balance)")
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.system(size: 12))
+                            Text("\(userService.user?.balance ?? 0)")
+                                .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                         }
-
+                        
                         Spacer()
                     }
                     .padding(.bottom, 4)
-
-                    // 소개글
-                    Text(user.bio?.isEmpty == false ? user.bio! : "소개글을 작성하세요")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(user.bio?.isEmpty == false ? .gray : .red)
-                        .multilineTextAlignment(.leading)
+                    
+                    // 소개글 수정 버튼
+                    Button(action: {
+                        let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
+                        feedbackGenerator.prepare()
+                        feedbackGenerator.impactOccurred()
+                        editedBio = userService.user?.bio ?? "소개글을 입력하세요"
+                        isEditingBio = true
+                    }) {
+                        Text(userService.user?.bio?.isEmpty == false ? userService.user!.bio! : "소개글을 입력하세요")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(userService.user?.bio?.isEmpty == false ? .gray : .gray)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+            .alert("닉네임 수정", isPresented: $isEditingNickname) {
+                VStack {
+                    TextField("닉네임을 입력하세요", text: $editedNickname)
+                        .onChange(of: editedNickname) {
+                            // 최대 길이 제한 (모든 문자 포함 12글자)
+                            if editedNickname.count > 12 {
+                                editedNickname = String(editedNickname.prefix(12))
+                            }
+                        }
+                    
+                    HStack {
+                        Button("취소", role: .cancel) {
+                            isEditingNickname = false
+                        }
+                        Button("저장") {
+                            if var user = userService.user {
+                                user.nickname = editedNickname
+                                userService.saveUser(user)
+                            }
+                            isEditingNickname = false
+                        }
+                    }
+                }
+            }
+            .alert("소개글 수정", isPresented: $isEditingBio) {
+                TextField("소개글을 입력하세요", text: $editedBio)
+                Button("취소", role: .cancel) {}
+                Button("저장") {
+                    if var user = userService.user {
+                        user.bio = editedBio
+                        userService.saveUser(user)
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -100,5 +156,6 @@ struct UserProfileView: View {
             ProgressView("Loading user data...")
                 .padding()
         }
+        
     }
 }
