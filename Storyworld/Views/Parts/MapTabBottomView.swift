@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct MapTabBottomView: View {
-    @State private var isScanButtonDisabled = false  // 버튼 상태를 관리하는 상태 변수
+    @State private var isButtonDisabled = false
 
     var body: some View {
         HStack(alignment: .center) {
@@ -39,7 +39,15 @@ struct MapTabBottomView: View {
                     .cornerRadius(16)
                     .shadow(color: Color(UIColor(hex:"6aebaf")).opacity(0.3), radius: 10, x: 0, y: 0)
             }
-            .disabled(isScanButtonDisabled)  // 버튼 비활성화 처리
+            .disabled(isButtonDisabled)
+            .onAppear {
+                NotificationCenter.default.addObserver(forName: .scanStarted, object: nil, queue: .main) { _ in
+                    isButtonDisabled = true  // 스캔 시작 시 버튼 비활성화
+                }
+                NotificationCenter.default.addObserver(forName: .scanCompleted, object: nil, queue: .main) { _ in
+                    isButtonDisabled = false  // 스캔 완료 시 버튼 활성화
+                }
+            }
             Spacer()
             Color.clear
                 .frame(width: 36, height: 36)
@@ -48,19 +56,11 @@ struct MapTabBottomView: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 24)
     }
-
-    // 스캔 시작 전 버튼 비활성화
-    func disableScanButton() {
-        isScanButtonDisabled = true
-    }
-
-    // 스캔 완료 후 버튼 활성화
-    func enableScanButton() {
-        isScanButtonDisabled = false
-    }
 }
 
 extension Notification.Name {
+    static let scanStarted = Notification.Name("scanStarted")
+    static let scanCompleted = Notification.Name("scanCompleted")
     static let scanButtonTapped = Notification.Name("scanButtonTapped")
     static let locationButtonTapped = Notification.Name("locationButtonTapped")
 }
