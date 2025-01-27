@@ -7,16 +7,16 @@ final class ScanManager {
     private let mapView: MapView
     private let tileManager: TileManager
     private let tileService: TileService
-    private let videoService: VideoService
+    private let mapCircleService: MapCircleService
     private let videoController: VideoController
     private var scanCircles: [UIView] = []
     private var isZooming = false
     
-    init(mapView: MapView, tileManager: TileManager, tileService: TileService, videoService: VideoService, videoController: VideoController) {
+    init(mapView: MapView, tileManager: TileManager, tileService: TileService, mapCircleService: MapCircleService, videoController: VideoController) {
         self.mapView = mapView
         self.tileManager = tileManager
         self.tileService = tileService
-        self.videoService = videoService
+        self.mapCircleService = mapCircleService
         self.videoController = videoController
     }
     
@@ -182,7 +182,7 @@ final class ScanManager {
         }
     }
     
-    private var preloadedTiles: [(Tile, [VideoService.CircleData])] = []
+    private var preloadedTiles: [(Tile, [MapCircleService.CircleData])] = []
     
     private func preloadTilesData(at coordinate: CLLocationCoordinate2D) {
         print("📥 타일 데이터 미리 로드 시작: \(coordinate)")
@@ -192,16 +192,18 @@ final class ScanManager {
 
         preloadedTiles.removeAll()
 
-        var newTileInfoDict: [Tile: [VideoService.CircleData]] = [:]
-        var existingTiles: [(Tile, [VideoService.CircleData])] = []
+        var newTileInfoDict: [Tile: [MapCircleService.CircleData]] = [:]
+        var existingTiles: [(Tile, [MapCircleService.CircleData])] = []
 
         for tile in visibleTiles {
             if let tileInfo = tileService.getTileInfo(for: tile) {
                 existingTiles.append((tile, tileInfo.layerData))
+                print("기존 타일 정보 : \(tileInfo.layerData)")
             } else {
                 print("➕ 새로운 타일 발견: \(tile.toKey())")
-                let newCircleData = videoService.createFilteredCircleData(visibleTiles: [tile], tileManager: tileManager)
+                let newCircleData = mapCircleService.createFilteredCircleData(visibleTiles: [tile], tileManager: tileManager)
                 newTileInfoDict[tile] = newCircleData
+                print("새로운 타일 정보 : \(newCircleData)")
             }
         }
 
@@ -217,7 +219,7 @@ final class ScanManager {
         print("✅ 타일 데이터 사전 로드 완료")
     }
     
-    private func addTilesToMap(_ tiles: [(Tile, [VideoService.CircleData])], coordinate: CLLocationCoordinate2D, isScan: Bool) {
+    private func addTilesToMap(_ tiles: [(Tile, [MapCircleService.CircleData])], coordinate: CLLocationCoordinate2D, isScan: Bool) {
         print("📊 즉시 타일 추가: \(tiles.count)개")
 
         var tilesToUpdate: [Tile] = []

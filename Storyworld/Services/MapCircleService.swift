@@ -1,5 +1,5 @@
 //
-//  VideoService.swift
+//  MapCircleService.swift
 //  Storyworld
 //
 //  Created by peter on 1/8/25.
@@ -8,44 +8,88 @@
 import Foundation
 import CoreLocation
 
-final class VideoService {
+final class MapCircleService {
     private let tileManager = TileManager()
     
     struct CircleData: Codable {
+        let id: UUID
         let genre: VideoGenre
         let rarity: VideoRarity
         let location: CLLocationCoordinate2D
+        let basePrice: Int   // 희귀도에 따른 기본 가격
+        var lastDropTime: Date?  // 마지막 드롭 시간
+        let cooldownTime: TimeInterval  // 드롭 제한 시간 (초 단위)
         
         private enum CodingKeys: String, CodingKey {
-            case genre, rarity, latitude, longitude
+            case id, genre, rarity, latitude, longitude, basePrice, lastDropTime, cooldownTime
         }
         
-        init(genre: VideoGenre, rarity: VideoRarity, location: CLLocationCoordinate2D) {
+        init(genre: VideoGenre, rarity: VideoRarity, location: CLLocationCoordinate2D, basePrice: Int, cooldownTime: TimeInterval, lastDropTime: Date?) {
+            self.id = UUID()
             self.genre = genre
             self.rarity = rarity
             self.location = location
+            self.basePrice = basePrice
+            self.cooldownTime = cooldownTime
+            self.lastDropTime = lastDropTime
         }
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
+            id = try container.decode(UUID.self, forKey: .id)
             genre = try container.decode(VideoGenre.self, forKey: .genre)
             rarity = try container.decode(VideoRarity.self, forKey: .rarity)
             let latitude = try container.decode(Double.self, forKey: .latitude)
             let longitude = try container.decode(Double.self, forKey: .longitude)
             location = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            basePrice = try container.decode(Int.self, forKey: .basePrice)
+            cooldownTime = try container.decode(TimeInterval.self, forKey: .cooldownTime)
+            lastDropTime = try? container.decode(Date.self, forKey: .lastDropTime)
         }
         
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(id, forKey: .id)
             try container.encode(genre, forKey: .genre)
             try container.encode(rarity, forKey: .rarity)
             try container.encode(location.latitude, forKey: .latitude)
             try container.encode(location.longitude, forKey: .longitude)
+            try container.encode(basePrice, forKey: .basePrice)
+            try container.encode(cooldownTime, forKey: .cooldownTime)
+            try? container.encode(lastDropTime, forKey: .lastDropTime)
+        }
+        
+        // 희귀도에 따른 가격 반환 (static 추가)
+        static func getPrice(for rarity: VideoRarity) -> Int {
+            switch rarity {
+            case .silver:
+                return 100
+            case .gold:
+                return 1000
+            case .diamond:
+                return 10000
+            case .ruby:
+                return 50000
+            }
+        }
+        
+        // 희귀도에 따른 쿨다운 시간 반환 (static 추가)
+        static func getCooldown(for rarity: VideoRarity) -> TimeInterval {
+            switch rarity {
+            case .silver:
+                return TimeInterval([5 * 60, 10 * 60].randomElement()!)  // 5분 또는 10분
+            case .gold:
+                return TimeInterval([2 * 60 * 60, 4 * 60 * 60].randomElement()!)  // 2시간 또는 4시간
+            case .diamond:
+                return TimeInterval([8 * 60 * 60, 12 * 60 * 60].randomElement()!)  // 8시간 또는 12시간
+            case .ruby:
+                return TimeInterval(48 * 60 * 60)  // 48시간 (고정)
+            }
         }
     }
     
-    func createFilteredCircleData(visibleTiles: [Tile], tileManager: TileManager) -> [VideoService.CircleData] {
-        var filteredCircles: [VideoService.CircleData] = []
+    func createFilteredCircleData(visibleTiles: [Tile], tileManager: TileManager) -> [MapCircleService.CircleData] {
+        var filteredCircles: [MapCircleService.CircleData] = []
         let genres: [VideoGenre] = [.entertainment, .talk, .music, .sports, .vlog, .fashion, .food, .education, .game]
         let rarityProbabilities: [(VideoRarity, Double)] = VideoRarity.allCases.map { ($0, $0.probability) }
         // 고정된 Zoom Level과 Length
@@ -59,8 +103,19 @@ final class VideoService {
                 }
                 
                 let randomRarity = randomRarityBasedOnProbability(rarityProbabilities)
-                let circle = VideoService.CircleData(genre: randomGenre, rarity: randomRarity, location: randomLocation)
-                
+                let basePrice = MapCircleService.CircleData.getPrice(for: randomRarity)
+                let cooldownTime = MapCircleService.CircleData.getCooldown(for: randomRarity)
+
+                let circle = MapCircleService.CircleData(
+                    genre: randomGenre,
+                    rarity: randomRarity,
+                    location: randomLocation,
+                    basePrice: basePrice,
+                    cooldownTime: cooldownTime,
+                    lastDropTime: nil // 초기 드롭 시간 없음
+                )
+
+                filteredCircles.append(circle)
                 filteredCircles.append(circle)
             } else {
                 print("❌ 랜덤 좌표 생성 실패 - Tile: \(tile)")
@@ -111,5 +166,18 @@ final class VideoService {
         
         // 기본값 반환 (논리적으로 이곳에 도달하지 않음)
         return .silver
+    }
+}
+
+extension MapCircleService.CircleData {
+    
+    /// 드롭 여부 확인
+    func isRecentlyDropped() -> Bool {
+        guard let lastDropTime = lastDropTime else {
+            return false  // 한 번도 드롭되지 않음
+        }
+        let currentTime = Date()
+        let timeSinceLastDrop = currentTime.timeIntervalSince(lastDropTime)
+        return timeSinceLastDrop < cooldownTime  // 쿨다운 시간 내인지 확인
     }
 }

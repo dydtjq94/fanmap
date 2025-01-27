@@ -53,7 +53,7 @@ final class DropManager {
               let window = scene.windows.first,
               let topVC = window.rootViewController {
                
-               let proView = DropWithCashView(genre: videoGenre, rarity: videoRarity)
+               let proView = DropWithCoinView(genre: videoGenre, rarity: videoRarity)
                let hostingController = UIHostingController(rootView: proView)
 
                // 배경을 투명하게 설정

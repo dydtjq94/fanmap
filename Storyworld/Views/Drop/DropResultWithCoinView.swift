@@ -1,5 +1,5 @@
 //
-//  DropResultView.swift
+//  DropResultWithCoinView.swift
 //  Storyworld
 //
 //  Created by peter on 1/27/25.
@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct DropResultView: View {
+struct DropResultWithCoinView: View {
     let video: Video
     let genre: VideoGenre
     let rarity: VideoRarity

@@ -15,7 +15,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
     private var videoLayerMapManager: VideoLayerMapManager!
 
     private let locationManager = CLLocationManager()
-    private let videoService = VideoService()
+    private let mapCircleService = MapCircleService()
     private var videoController: VideoController?
     private let tileCacheManager = TileCacheManager()
     private let tileManager = TileManager()
@@ -41,7 +41,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
             mapView: mapView,
             tileManager: tileManager,
             tileService: tileService,
-            videoService: videoService,
+            mapCircleService: mapCircleService,
             videoController: videoController!
         )
         
@@ -205,11 +205,11 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
     }
     
     /// 여러 타일을 한 번에 저장하는 새로운 함수
-    private func batchSaveTileInfo(tiles: [Tile], coordinate: CLLocationCoordinate2D, isScan: Bool) -> [Tile: [VideoService.CircleData]] {
-        var newTileInfoDict: [Tile: [VideoService.CircleData]] = [:]
+    private func batchSaveTileInfo(tiles: [Tile], coordinate: CLLocationCoordinate2D, isScan: Bool) -> [Tile: [MapCircleService.CircleData]] {
+        var newTileInfoDict: [Tile: [MapCircleService.CircleData]] = [:]
         
         for tile in tiles {
-            let newCircleData = videoService.createFilteredCircleData(visibleTiles: [tile], tileManager: tileManager)
+            let newCircleData = mapCircleService.createFilteredCircleData(visibleTiles: [tile], tileManager: tileManager)
             newTileInfoDict[tile] = newCircleData
         }
 
@@ -229,7 +229,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         
         var tilesToUpdate: [Tile] = []
         var newTiles: [Tile] = []
-        var circlesToAdd: [(Tile, [VideoService.CircleData])] = []
+        var circlesToAdd: [(Tile, [MapCircleService.CircleData])] = []
 
         for tile in visibleTiles {
             if let tileInfo = tileService.getTileInfo(for: tile) {

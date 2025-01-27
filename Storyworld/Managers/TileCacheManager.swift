@@ -9,7 +9,7 @@ import Foundation
 
 /// 타일 데이터 구조체
 struct TileInfo: Codable {
-    let layerData: [VideoService.CircleData] // 해당 타일의 Video-Circle 데이터
+    let layerData: [MapCircleService.CircleData] // 해당 타일의 Video-Circle 데이터
     var isVisible: Bool // 타일이 현재 표시되고 있는지 여부
 }
 
@@ -52,3 +52,4 @@ final class TileCacheManager {
         print("🗑️ 타일 데이터 캐시 초기화 완료")
     }
 }
+

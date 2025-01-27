@@ -33,7 +33,7 @@ extension Tile {
 final class TileManager {
     
     struct TileInfo: Codable {
-        let layerData: [VideoService.CircleData]
+        let layerData: [MapCircleService.CircleData]
         var isVisible: Bool
     }
     

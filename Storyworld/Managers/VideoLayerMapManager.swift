@@ -17,7 +17,7 @@ final class VideoLayerMapManager {
         self.mapView = mapView
     }
     
-    func addGenreCircles(data: [VideoService.CircleData], userLocation: CLLocationCoordinate2D, isScan: Bool = false) {
+    func addGenreCircles(data: [MapCircleService.CircleData], userLocation: CLLocationCoordinate2D, isScan: Bool = false) {
         for (index, item) in data.enumerated() {
             let location = item.location
             
@@ -30,6 +30,9 @@ final class VideoLayerMapManager {
             let glowLayerId = "\(prefix)glow-layer-\(tileKey)"
             let circleLayerId = "\(prefix)circle-layer-\(tileKey)"
             let symbolLayerId = "\(prefix)symbol-layer-\(tileKey)"
+            
+            // 드롭 여부에 따라 opacity 설정
+            let opacityValue: Double = item.isRecentlyDropped() ? 0.3 : 1.0
             
             do {
                 // GeoJSONSource 생성
@@ -96,26 +99,25 @@ final class VideoLayerMapManager {
                        )
                 )
                 circleLayer.circleRadius = .constant(14.0)
-                circleLayer.circleOpacity = .constant(1.0)
+                circleLayer.circleOpacity = .constant(opacityValue)
                 
                 // Symbol Layer 설정
-                let sfSymbolName = "play.fill" // 사용할 SF Symbol 이름
-                let iconName = "sf-icon-play-fill" // Mapbox에서 사용할 고유 아이디
-                let mapVideoIconColor = AppColors.mapVideoIcon // UIColor
-                registerSFSymbol(mapView: mapView, iconName: iconName, sfSymbolName: sfSymbolName, color: mapVideoIconColor, size: 12)
-                
-                // Symbol Layer 설정
-                var symbolLayer = SymbolLayer(id: symbolLayerId, source: sourceId)
-                symbolLayer.iconImage = .constant(.name(iconName)) // 등록된 SF Symbol 아이디 사용
-                symbolLayer.iconSize = .constant(0.35) // 아이콘 크기 조정
-                symbolLayer.iconAnchor = .constant(.center) // 아이콘 위치
-                symbolLayer.iconAllowOverlap = .constant(true) // 중첩 허용
-                symbolLayer.iconIgnorePlacement = .constant(true) // 배치 무시
+//                let sfSymbolName = "play.fill" // 사용할 SF Symbol 이름
+//                let iconName = "sf-icon-play-fill" // Mapbox에서 사용할 고유 아이디
+//                let mapVideoIconColor = AppColors.mapVideoIcon // UIColor
+//                registerSFSymbol(mapView: mapView, iconName: iconName, sfSymbolName: sfSymbolName, color: mapVideoIconColor, size: 12)
+//                
+//                // Symbol Layer 설정
+//                var symbolLayer = SymbolLayer(id: symbolLayerId, source: sourceId)
+//                symbolLayer.iconImage = .constant(.name(iconName)) // 등록된 SF Symbol 아이디 사용
+//                symbolLayer.iconSize = .constant(0.35) // 아이콘 크기 조정
+//                symbolLayer.iconAnchor = .constant(.center) // 아이콘 위치
+//                symbolLayer.iconAllowOverlap = .constant(true) // 중첩 허용
+//                symbolLayer.iconIgnorePlacement = .constant(true) // 배치 무시
                 
                 // Mapbox 지도에 레이어 추가
-//                try mapView.mapboxMap.addLayer(glowLayer)
                 try mapView.mapboxMap.addLayer(circleLayer)
-                try mapView.mapboxMap.addLayer(symbolLayer, layerPosition: .above(circleLayer.id))
+//                try mapView.mapboxMap.addLayer(symbolLayer, layerPosition: .above(circleLayer.id))
                 
             } catch {
                 print("❌ 레이어 추가 실패: \(error.localizedDescription)")

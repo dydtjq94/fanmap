@@ -1,5 +1,5 @@
 //
-//  DropWithCashView.swift
+//  DropWithCoinView.swift
 //  Storyworld
 //
 //  Created by peter on 1/27/25.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct DropWithCashView: View {
+struct DropWithCoinView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var backgroundOpacity: Double = 0.0
     @State private var playIcon: String = "play.fill"
@@ -92,7 +92,7 @@ struct DropWithCashView: View {
                     RarityBadgeView(rarity: rarity)
                     GenreBadgeView(genre: genre)
                 }
-                .padding(.top, 40)
+                .padding(.top, 32)
                 
                 // 닫기 버튼
                 Button(action: {
@@ -123,13 +123,13 @@ struct DropWithCashView: View {
         }
         .fullScreenCover(isPresented: $showDropResultView) {
             if let video = selectedVideo {
-                DropResultView(
+                DropResultWithCoinView(
                     video: video,
                     genre: genre,
                     rarity: rarity,
                     closeAction: {
                         showDropResultView = false
-                        presentationMode.wrappedValue.dismiss()  // DropWithCashView도 닫기
+                        presentationMode.wrappedValue.dismiss()
                     }
                 )
             }

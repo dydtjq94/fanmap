@@ -70,7 +70,7 @@ struct DropViewPart: View {
         }
         .fullScreenCover(isPresented: $showDropResultView) {
             if let video = selectedVideo {
-                DropResultView(
+                DropResultWithCoinView(
                     video: video,
                     genre: genre,
                     rarity: rarity,

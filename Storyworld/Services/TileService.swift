@@ -40,7 +40,7 @@ final class TileService {
     }
     
     // 타일 정보를 저장 (중복 방지 및 가시성 업데이트 포함)
-    func saveTileInfo(for tile: Tile, layerData: [VideoService.CircleData], isVisible: Bool) {
+    func saveTileInfo(for tile: Tile, layerData: [MapCircleService.CircleData], isVisible: Bool) {
         let tileKey = tile.toKey()
         
         if let existingTileInfo = tileData[tileKey] {
@@ -76,7 +76,7 @@ final class TileService {
     }
     
     // 여러 타일 정보를 한 번에 저장
-    func saveMultipleTileInfo(tileInfoDict: [Tile: [VideoService.CircleData]], isVisible: Bool) {
+    func saveMultipleTileInfo(tileInfoDict: [Tile: [MapCircleService.CircleData]], isVisible: Bool) {
         var updated = false
 
         for (tile, layerData) in tileInfoDict {
