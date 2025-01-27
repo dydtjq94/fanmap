@@ -66,8 +66,6 @@ final class VideoService {
                 print("❌ 랜덤 좌표 생성 실패 - Tile: \(tile)")
             }
         }
-        
-        print("✅ 총 \(filteredCircles.count)개의 Circle 데이터 생성 완료")
         return filteredCircles
     }
     
