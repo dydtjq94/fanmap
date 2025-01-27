@@ -46,7 +46,6 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         notificationManager = NotificationManager(
             onScanButtonTapped: { [weak self] in
                 self?.scanManager?.handleScanButtonTapped()
-                self?.reloadLocationPuck()
             },
             onClearCacheTapped: { [weak self] in
                 self?.handleClearCacheTapped()
@@ -195,48 +194,73 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         }
     }
     
-    /// 타일 데이터 로드 및 Circle 레이어 추가 함수
+    /// 여러 타일을 한 번에 저장하는 새로운 함수
+    private func batchSaveTileInfo(tiles: [Tile], coordinate: CLLocationCoordinate2D, isScan: Bool) -> [Tile: [VideoService.CircleData]] {
+        var newTileInfoDict: [Tile: [VideoService.CircleData]] = [:]
+        
+        for tile in tiles {
+            let newCircleData = videoService.createFilteredCircleData(visibleTiles: [tile], tileManager: tileManager)
+            newTileInfoDict[tile] = newCircleData
+        }
+
+        tileService.saveMultipleTileInfo(tileInfoDict: newTileInfoDict, isVisible: true)
+        return newTileInfoDict // 저장된 타일 데이터를 리턴
+    }
+
+    /// 최적화된 타일 로드 및 추가 함수
     private func loadTilesAndAddCircles(at coordinate: CLLocationCoordinate2D, isScan: Bool = false) {
         let visibleTiles = tileManager.tilesInRange(center: coordinate)
         print("📍 현재 보이는 타일: \(visibleTiles.count)개")
-        
+
         guard let videoController = self.videoController else {
             print("⚠️ VideoController가 초기화되지 않았습니다.")
             return
         }
         
+        var tilesToUpdate: [Tile] = []
+        var newTiles: [Tile] = []
+        var circlesToAdd: [(Tile, [VideoService.CircleData])] = []
+
         for tile in visibleTiles {
             if let tileInfo = tileService.getTileInfo(for: tile) {
                 if tileInfo.isVisible {
-                    // 이미 그려진 타일이므로 건너뛰기
-                    print("✔️ 이미 추가된 타일: \(tile.toKey()), isVisible: \(tileInfo.isVisible)")
+                    print("✔️ 이미 추가된 타일: \(tile.toKey()), 건너뛰기")
                     continue
                 } else {
-                    print("🔄 기존 타일 업데이트: \(tile.toKey())")
-                    tileService.updateTileVisibility(for: tile, isVisible: true)
-                    
-                    videoController.videoLayerMapManager.addGenreCircles(
-                        data: tileInfo.layerData,
-                        userLocation: coordinate,
-                        isScan: isScan
-                    )
+                    print("🔄 기존 타일 가시성 업데이트 필요: \(tile.toKey())")
+                    tilesToUpdate.append(tile)
+                    circlesToAdd.append((tile, tileInfo.layerData)) // 기존 타일 레이어 추가
                 }
             } else {
                 print("➕ 새로운 타일 발견: \(tile.toKey())")
-                
-                let newCircleData = videoService.createFilteredCircleData(visibleTiles: [tile], tileManager: tileManager)
-                
-                // 새로운 타일 저장 및 isVisible을 true로 설정
-                tileService.saveTileInfo(for: tile, layerData: newCircleData, isVisible: true)
-                
-                videoController.videoLayerMapManager.addGenreCircles(
-                    data: newCircleData,
-                    userLocation: coordinate,
-                    isScan: isScan
-                )
+                newTiles.append(tile)
             }
         }
+
+        // 가시성 업데이트를 한 번에 처리
+        if !tilesToUpdate.isEmpty {
+            tileService.batchUpdateTileVisibility(tiles: tilesToUpdate, isVisible: true)
+        }
+
+        // 새로운 타일들을 한 번에 저장 후 그리기
+        if !newTiles.isEmpty {
+            let newTileDataDict = batchSaveTileInfo(tiles: newTiles, coordinate: coordinate, isScan: isScan)
+            for (tile, circleData) in newTileDataDict {
+                circlesToAdd.append((tile, circleData))
+            }
+        }
+
+        // 지도에 모든 타일의 레이어 추가 (기존 + 새로운 타일 포함)
+        for (tile, circleData) in circlesToAdd {
+            videoController.videoLayerMapManager.addGenreCircles(
+                data: circleData,
+                userLocation: coordinate,
+                isScan: isScan
+            )
+            print("🎨 타일 레이어 추가 완료: \(tile.toKey())")
+        }
     }
+
     
     private func reloadLocationPuck() {
         // 현재 Puck을 비활성화

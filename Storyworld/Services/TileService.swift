@@ -74,4 +74,71 @@ final class TileService {
             print("⚠️ 업데이트할 타일 정보가 존재하지 않음: \(tileKey)")
         }
     }
+    
+    // 여러 타일 정보를 한 번에 저장
+    func saveMultipleTileInfo(tileInfoDict: [Tile: [VideoService.CircleData]], isVisible: Bool) {
+        var updated = false
+
+        for (tile, layerData) in tileInfoDict {
+            let tileKey = tile.toKey()
+            
+            if let existingTileInfo = tileData[tileKey] {
+                if existingTileInfo.isVisible {
+                    print("✔️ 이미 isVisible이 true인 타일, 저장 생략: \(tileKey)")
+                    continue
+                } else {
+                    // 기존 타일의 가시성 업데이트
+                    tileData[tileKey]?.isVisible = true
+                    updated = true
+                    print("🔄 기존 타일의 가시성 업데이트: \(tileKey)")
+                }
+            } else {
+                // 새 타일 정보 추가
+                tileData[tileKey] = TileManager.TileInfo(layerData: layerData, isVisible: isVisible)
+                updated = true
+                print("💾 새 타일 데이터 저장 완료: \(tileKey)")
+            }
+        }
+
+        if updated {
+            cacheManager.saveTileData(tileData) // 변경 사항이 있으면 한 번만 저장
+            print("✅ 여러 타일 데이터 저장 완료")
+        } else {
+            print("⚠️ 저장할 타일 데이터 없음")
+        }
+    }
+    
+    /// 여러 타일의 가시성 상태를 한 번에 업데이트
+    func batchUpdateTileVisibility(tiles: [Tile], isVisible: Bool) {
+        var updated = false
+        var updatedTileKeys: [String] = []
+
+        for tile in tiles {
+            let tileKey = tile.toKey()
+            
+            if var existingTileInfo = tileData[tileKey] {
+                if existingTileInfo.isVisible == isVisible {
+                    print("✔️ 이미 동일한 가시성 상태인 타일: \(tileKey), 생략")
+                    continue
+                }
+                
+                // 변경이 필요한 경우만 업데이트
+                existingTileInfo.isVisible = isVisible
+                tileData[tileKey] = existingTileInfo
+                updatedTileKeys.append(tileKey)
+                updated = true
+            } else {
+                print("⚠️ 업데이트할 타일 정보 없음: \(tileKey)")
+            }
+        }
+
+        // 한 번의 저장으로 성능 최적화
+        if updated {
+            cacheManager.saveTileData(tileData)
+            print("✅ 업데이트된 타일 저장 완료: \(updatedTileKeys)")
+        } else {
+            print("⚠️ 변경된 타일 없음")
+        }
+    }
+
 }

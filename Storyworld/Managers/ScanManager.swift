@@ -31,26 +31,22 @@ final class ScanManager {
         performZoom(to: firstZoom) { [weak self] in
             guard let self = self else { return }
             let centerCoordinate = self.mapView.mapboxMap.cameraState.center
+            
+            let operationQueue = OperationQueue()
+            operationQueue.maxConcurrentOperationCount = 2
+            
+            operationQueue.addOperation {
+                self.preloadTilesData(at: centerCoordinate)
+            }
+            
+            DispatchQueue.main.async {
+                self.startScanAnimation(centerCoordinate: centerCoordinate) { [weak self] in
+                    guard let self = self else { return }
 
-            DispatchQueue.global(qos: .userInitiated).async {
-                let dispatchGroup = DispatchGroup()
-                
-                // 타일 데이터를 비동기적으로 로드
-                dispatchGroup.enter()
-                DispatchQueue.global(qos: .userInitiated).async {
-                    self.preloadTilesData(at: centerCoordinate)
-                    dispatchGroup.leave()
-                }
+                    print("✅ 모든 레이어가 성공적으로 추가되었습니다.")
 
-                // 애니메이션을 동시에 실행
-                DispatchQueue.main.async {
-                    self.startScanAnimation(centerCoordinate: centerCoordinate) { [weak self] in
-                        guard let self = self else { return }
-
-                        print("✅ 모든 레이어가 성공적으로 추가되었습니다.")
-
-                        // 타일 데이터 로드와 애니메이션이 완료되면 줌 복구
-                        dispatchGroup.notify(queue: .main) {
+                    operationQueue.addOperation {
+                        DispatchQueue.main.async {
                             self.performZoom(to: finalZoom) {
                                 print("✅ Zoom 레벨이 \(finalZoom)으로 복구되었습니다.")
                                 self.mapView.isUserInteractionEnabled = true
@@ -63,11 +59,12 @@ final class ScanManager {
         }
     }
 
+
     private func startScanAnimation(centerCoordinate: CLLocationCoordinate2D, completion: @escaping () -> Void) {
         let scanLineWidth: CGFloat = 4.0
-        let scanDuration: TimeInterval = 2.5
-        let fadeOutDelay: TimeInterval = 0.1
-        let fadeOutDuration: TimeInterval = 0.3
+        let scanDuration: TimeInterval = 2.0
+        let fadeOutDelay: TimeInterval = 0.01
+        let fadeOutDuration: TimeInterval = 0.01
 
         let mapWidth = mapView.frame.width
 
@@ -168,7 +165,7 @@ final class ScanManager {
         isZooming = true
         print("🔍 줌 시작: \(zoomLevel) 레벨로 이동 중...")
         
-        mapView.camera.ease(to: CameraOptions(zoom: zoomLevel), duration: 0.3, curve: .easeInOut) { [weak self] position in
+        mapView.camera.ease(to: CameraOptions(zoom: zoomLevel), duration: 0.2, curve: .easeInOut) { [weak self] position in
             guard let self = self else { return }
             
             if position == .end {
@@ -177,7 +174,7 @@ final class ScanManager {
                 completion()
             } else {
                 print("❌ 줌 실패: \(zoomLevel) 재시도 중...")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     self.isZooming = false  // 실패 시 플래그 해제
                     self.performZoom(to: zoomLevel, completion: completion)
                 }
@@ -189,49 +186,64 @@ final class ScanManager {
     
     private func preloadTilesData(at coordinate: CLLocationCoordinate2D) {
         print("📥 타일 데이터 미리 로드 시작: \(coordinate)")
-        
+
         let visibleTiles = tileManager.tilesInRange(center: coordinate)
         print("📍 사전 로드할 타일 수: \(visibleTiles.count)개")
-        
+
         preloadedTiles.removeAll()
-        
+
+        var newTileInfoDict: [Tile: [VideoService.CircleData]] = [:]
+        var existingTiles: [(Tile, [VideoService.CircleData])] = []
+
         for tile in visibleTiles {
             if let tileInfo = tileService.getTileInfo(for: tile) {
-                print("✔️ 이미 사전 로드된 타일: \(tile.toKey())")
-                
-                // isVisible 여부 상관없이 다시 추가할 리스트에 포함
-                preloadedTiles.append((tile, tileInfo.layerData))
+                existingTiles.append((tile, tileInfo.layerData))
             } else {
                 print("➕ 새로운 타일 발견: \(tile.toKey())")
-                
                 let newCircleData = videoService.createFilteredCircleData(visibleTiles: [tile], tileManager: tileManager)
-                
-                // 타일 정보를 저장 (isVisible을 false로 설정하여 후처리)
-                tileService.saveTileInfo(for: tile, layerData: newCircleData, isVisible: false)
-                
-                preloadedTiles.append((tile, newCircleData))
+                newTileInfoDict[tile] = newCircleData
             }
         }
+
+        // 새로운 타일 정보를 한 번에 저장 (isVisible = false)
+        if !newTileInfoDict.isEmpty {
+            tileService.saveMultipleTileInfo(tileInfoDict: newTileInfoDict, isVisible: false)
+        }
+
+        // 기존 타일과 새 타일 데이터를 모두 preloadedTiles에 추가
+        preloadedTiles.append(contentsOf: existingTiles)
+        preloadedTiles.append(contentsOf: newTileInfoDict.map { ($0.key, $0.value) })
+
+        print("✅ 타일 데이터 사전 로드 완료")
     }
     
     private func addTilesToMap(_ tiles: [(Tile, [VideoService.CircleData])], coordinate: CLLocationCoordinate2D, isScan: Bool) {
         print("📊 즉시 타일 추가: \(tiles.count)개")
-        
+
+        var tilesToUpdate: [Tile] = []
+
         for (tile, layerData) in tiles {
             if let tileInfo = tileService.getTileInfo(for: tile), tileInfo.isVisible {
                 print("✔️ 이미 추가된 타일 건너뜀: \(tile.toKey())")
                 continue
             }
-            
-            print("🟢 타일 즉시 추가: \(tile.toKey())")
-            
-            // 타일을 지도에 추가
-            tileService.updateTileVisibility(for: tile, isVisible: true)
-            videoController.videoLayerMapManager.addGenreCircles(
-                data: layerData,
-                userLocation: coordinate,
-                isScan: isScan
-            )
+
+            tilesToUpdate.append(tile)
+            DispatchQueue.main.async {
+                self.videoController.videoLayerMapManager.addGenreCircles(
+                    data: layerData,
+                    userLocation: coordinate,
+                    isScan: isScan
+                )
+            }
         }
+
+        // 가시성 업데이트를 한 번에 처리
+        if !tilesToUpdate.isEmpty {
+            tileService.batchUpdateTileVisibility(tiles: tilesToUpdate, isVisible: true)
+        }
+
+        print("✅ 타일 추가 완료")
     }
+
 }
