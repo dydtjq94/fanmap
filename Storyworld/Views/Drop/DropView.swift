@@ -54,8 +54,6 @@ final class DropView: UIView {
             // playButton 중앙 배치
             playButton.centerXAnchor.constraint(equalTo: dropImageView.centerXAnchor),
             playButton.centerYAnchor.constraint(equalTo: dropImageView.centerYAnchor),
-            //            playButton.widthAnchor.constraint(equalToConstant: 50),
-            //            playButton.heightAnchor.constraint(equalToConstant: 50)
         ])
     }
     

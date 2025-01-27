@@ -7,10 +7,11 @@
 
 import UIKit
 import MapboxMaps
+import SwiftUI
 
 final class DropManager {
     private let mapView: MapView
-
+    
     
     init(mapView: MapView) {
         self.mapView = mapView
@@ -24,20 +25,55 @@ final class DropManager {
         // UI 업데이트 로직 추가 가능 (예: 포스터, 제목, 즐겨찾기 버튼 표시)
     }
     
-    func showProSubscriptionMessage() {
+    func showProSubscriptionView(videoGenre: VideoGenre, videoRarity: VideoRarity) {
         let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
         feedbackGenerator.prepare()
         feedbackGenerator.impactOccurred()
+        
         print("🔒 PRO 구독이 필요합니다.")
-        // PRO 구독 안내 화면을 추가로 구현 가능
+        
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = scene.windows.first,
+           let topVC = window.rootViewController {
+            
+            let proView = ProSubscriptionView()
+            let hostingController = UIHostingController(rootView: proView)
+            hostingController.modalPresentationStyle = .overFullScreen
+            topVC.present(hostingController, animated: true, completion: nil)
+        }
     }
     
-    func showAdMessage() {
+    func showDropWithCachView(videoGenre: VideoGenre, videoRarity: VideoRarity) {
         let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
         feedbackGenerator.prepare()
         feedbackGenerator.impactOccurred()
-        print("📢 광고 보기가 필요합니다.")
-        // 광고 보기 화면을 추가로 구현 가능
+        
+        // 최상위 ViewController 찾기
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first,
+              let topVC = window.rootViewController {
+               
+               let proView = DropWithCashView(genre: videoGenre, rarity: videoRarity)
+               let hostingController = UIHostingController(rootView: proView)
+
+               // 배경을 투명하게 설정
+               hostingController.view.backgroundColor = UIColor.clear
+               hostingController.modalPresentationStyle = .overFullScreen
+               
+               topVC.present(hostingController, animated: true, completion: nil)
+           }
+    }
+    
+    func handleDropWithinDefault(videoGenre: VideoGenre, videoRarity: VideoRarity) {
+        print("🎯 클릭된 Circle - Genre: \(videoGenre.rawValue), Rarity: \(videoRarity.rawValue)")
+        
+        // 햅틱 피드백 생성
+        let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
+        feedbackGenerator.prepare()
+        feedbackGenerator.impactOccurred()
+        
+        // DropController 호출 (API 없이)
+        presentDropController(genre: videoGenre, rarity: videoRarity)
     }
     
     func presentDropController(genre: VideoGenre, rarity: VideoRarity) {

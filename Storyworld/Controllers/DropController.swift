@@ -210,13 +210,12 @@ final class DropController: UIViewController {
     
     private func againDropViewAnimation() {
         UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut], animations: {
-            // blurView를 왼쪽 하단으로 3px 이동
             self.dropView.subviews.forEach { view in
                 if view is UIVisualEffectView {
                     view.transform = CGAffineTransform(translationX: 0, y: 0)
                 }
             }
-            // dropImageView를 오른쪽 상단으로 3px 이동
+
             self.dropView.dropImageView.transform = CGAffineTransform(translationX: 0, y: 0)
         }, completion: { _ in
             // 애니메이션 완료 시 햅틱 피드백 실행

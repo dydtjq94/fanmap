@@ -156,4 +156,26 @@ final class VideoLayerMapManager {
             print("❌ 아이콘 이미지를 등록하는 데 실패했습니다: \(error.localizedDescription)")
         }
     }
+    
+    func removeAllVideoLayers() {
+        do {
+            let allLayers = try mapView.mapboxMap.allLayerIdentifiers
+            for layer in allLayers {
+                if layer.id.contains("circle-layer") || layer.id.contains("glow-layer") || layer.id.contains("symbol-layer") {
+                    try mapView.mapboxMap.removeLayer(withId: layer.id)
+                    print("🗑️ 레이어 제거 완료: \(layer.id)")
+                }
+            }
+            
+            let allSources = try mapView.mapboxMap.allSourceIdentifiers
+            for source in allSources {
+                if source.id.contains("source") {
+                    try mapView.mapboxMap.removeSource(withId: source.id)
+                    print("🗑️ 소스 제거 완료: \(source.id)")
+                }
+            }
+        } catch {
+            print("❌ 레이어 및 소스 제거 실패: \(error.localizedDescription)")
+        }
+    }
 }

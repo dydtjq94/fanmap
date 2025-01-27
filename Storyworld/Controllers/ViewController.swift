@@ -12,6 +12,8 @@ import Turf
 
 final class ViewController: UIViewController, CLLocationManagerDelegate {
     private var mapView: MapView!
+    private var videoLayerMapManager: VideoLayerMapManager!
+
     private let locationManager = CLLocationManager()
     private let videoService = VideoService()
     private var videoController: VideoController?
@@ -33,7 +35,8 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         super.viewDidLoad()
         setupMapView()
         setupLocationManager()
-        
+        videoLayerMapManager = VideoLayerMapManager(mapView: mapView)
+
         scanManager = ScanManager(
             mapView: mapView,
             tileManager: tileManager,
@@ -108,12 +111,12 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
     
     @objc private func handleAppWillEnterForeground() {
         guard let lastBackgroundTime = lastBackgroundTime else { return }
+        
         let timeInBackground = Date().timeIntervalSince(lastBackgroundTime)
         
         if timeInBackground > Constants.Numbers.backgroundLongTimer {
             // 1시간 이상 백그라운드에 있었다면 초기 상태로 복원
             print("🔄 앱이 \(timeInBackground)초 이상 백그라운드에 있었습니다. 초기 상태로 복원합니다.")
-            setupMapView() // 초기화 작업만 수행
             
             // 사용자 위치 가져오기
             guard let coordinate = mapView.location.latestLocation?.coordinate else {
@@ -121,10 +124,17 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
                 return
             }
             
+            videoLayerMapManager.removeAllVideoLayers()
+            locationCircleManager.addCircleLayers(to: mapView, at: coordinate)
+            moveCameraToCurrentLocation()
+            // 캐시된 타일 데이터 초기화 (선택 사항)
+            tileService.resetTileVisibility()
+            
             // 타일 데이터 로드 및 Circle 레이어 추가
             loadTilesAndAddCircles(at: coordinate)
             
             reloadLocationPuck()
+            
         } else if timeInBackground > Constants.Numbers.backgroundTimer { // 예: 30초
             // 30초 이상 백그라운드에 있었다면 현재 위치로 이동 및 데이터 갱신
             print("🔄 앱이 \(timeInBackground)초 이상 백그라운드에 있었습니다. 현재 위치로 화면 이동.")

@@ -2,7 +2,7 @@
 //  DropResultView.swift
 //  Storyworld
 //
-//  Created by peter on 1/24/25.
+//  Created by peter on 1/27/25.
 //
 
 
@@ -12,9 +12,8 @@ struct DropResultView: View {
     let video: Video
     let genre: VideoGenre
     let rarity: VideoRarity
-    let onCollect: () -> Void
-    @Environment(\.presentationMode) var presentationMode
-
+    let closeAction: () -> Void
+    
     var body: some View {
         ZStack {
             AsyncImage(url: URL(string: video.thumbnailURL)) { image in
@@ -27,31 +26,30 @@ struct DropResultView: View {
             } placeholder: {
                 Color.black.opacity(0.8)
             }
-
-            VStack(spacing: 20) {
+            VStack{
+                Spacer()
                 VStack(spacing: 20) {
                     AsyncImage(url: URL(string: video.thumbnailURL)) { image in
                         image
                             .resizable()
-                            .scaledToFit()
-                            .frame(width: 330)
+                            .frame(width: 330, height: 185)
                             .cornerRadius(10)
                             .shadow(radius: 10)
                     } placeholder: {
                         Color.gray.frame(width: 330, height: 185)
                     }
-
+                    
                     VStack(alignment: .leading, spacing: 8) {
                         Text(video.title)
                             .font(.title2.bold())
                             .foregroundColor(.white)
                             .multilineTextAlignment(.leading)
                             .lineLimit(2)
-
+                        
                         Text(Channel.getChannelName(by: video.channelId))
                             .font(.headline)
                             .foregroundColor(Color.gray)
-
+                        
                         HStack(spacing: 12) {
                             RarityBadgeView(rarity: rarity)
                             GenreBadgeView(genre: genre)
@@ -59,23 +57,27 @@ struct DropResultView: View {
                     }
                     .frame(width: 330, alignment: .leading)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 24)
+                .padding()
                 .background(Color(rarity.dropBackgroundColor))
-                .cornerRadius(10)
+                .cornerRadius(20)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
                 Spacer()
-                Button(action: {
-                    onCollect()
-                }) {
+                // Collect 버튼
+                Button(action: closeAction) {
                     Text("Collect")
-                        .font(.headline)
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
-                        .frame(width: 200, height: 50)
-                        .background(Color.red)
+                        .padding()
+                        .background(Color(UIColor(hex: "#F8483B")))
                         .cornerRadius(10)
+                        .padding(.horizontal, 40)
                 }
             }
-            .padding(.vertical, 40)
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.7)) {
+                // 애니메이션 효과
+            }
         }
     }
 }

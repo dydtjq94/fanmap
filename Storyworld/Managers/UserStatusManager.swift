@@ -53,4 +53,17 @@ class UserStatusManager {
             return Int.random(in: 1800...2200)
         }
     }
+    
+    func getCoinDeduct(for rarity: VideoRarity) -> Int {
+        switch rarity {
+        case .silver:
+            return Int.random(in: 100...300)
+        case .gold:
+            return Int.random(in: 1000...2000)
+        case .diamond:
+            return Int.random(in: 10000...20000)
+        case .ruby:
+            return Int.random(in: 50000...100000)
+        }
+    }
 }

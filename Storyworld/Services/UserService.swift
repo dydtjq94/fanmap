@@ -26,7 +26,7 @@ class UserService: ObservableObject {
                 profileImageURL: nil,
                 bio: "소개글을 작성하세요",
                 experience: 0,
-                balance: 0,
+                balance: 100000,
                 gems: 0,
                 collectedVideos: [],
                 playlists: []
@@ -88,5 +88,45 @@ class UserService: ObservableObject {
         
         print("새로운 유저 정보: \(user)")
         self.saveUser(user)
+    }
+    
+    func rewardUserWithoutCoins(for video: Video, amount: Int) {
+        guard var user = user else { return }
+        
+        print("수집 전 경험치 \(user.experience), 코인 \(user.balance)")
+        
+        // 등급에 따른 보상 계산
+        let experienceReward = UserStatusManager.shared.getExperienceReward(for: video.rarity)
+        let amount : Int = amount
+        
+        user.experience += experienceReward
+        user.balance -= amount
+        
+        print("수집 후 경험치 \(user.experience), 코인 \(user.balance)")
+        
+        // 레벨 업데이트
+        let newLevel = UserStatusManager.shared.calculateLevel(from: user.experience)
+        print("🎉 경험치 획득: \(experienceReward), 코인 제거: \(amount)")
+        print("🏆 새로운 레벨: \(newLevel)")
+        
+        // 변경된 사용자 정보를 즉시 저장
+        
+        print("새로운 유저 정보: \(user)")
+        self.saveUser(user)
+    }
+    
+    func deductCoins(amount: Int) -> Bool {
+        guard var user = user else {
+            print("❌ 사용자 정보 없음")
+            return false
+        }
+
+        if user.balance >= amount {
+            user.balance -= amount
+            return true
+        } else {
+            print("❌ 잔액 부족. 현재 잔액: \(user.balance)")
+            return false
+        }
     }
 }

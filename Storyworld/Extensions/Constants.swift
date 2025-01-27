@@ -17,10 +17,10 @@ struct Constants {
         static let firstZoom: Double = 17.2
         static let finalZoom: Double = 14.6
         
-        static let smallCircleRadius: Double = 80.0
-        static let largeCircleRadius: Double = 320.0
+        static let smallCircleRadius: Double = 240.0
+        static let largeCircleRadius: Double = 240.0
         
-        static let backgroundTimer: Double = 15.0
-        static let backgroundLongTimer: Double = 3600.0
+        static let backgroundTimer: Double = 30.0
+        static let backgroundLongTimer: Double = 600.0
     }
 }

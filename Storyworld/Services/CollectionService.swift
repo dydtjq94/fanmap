@@ -73,4 +73,34 @@ class CollectionService {
             print("⚠️ 이미 존재하는 영상: \(video.videoId)")
         }
     }
+    
+    func saveCollectedVideoWithoutReward(_ video: Video, amount: Int) {
+        guard var currentUser = userService.user else { return }
+        
+        let amount: Int = amount
+        
+        if !currentUser.collectedVideos.contains(where: { $0.video.videoId == video.videoId }) {
+            let newCollectedVideo = CollectedVideo(
+                video: video,
+                collectedDate: Date(),
+                playlistIds: [],
+                isFavorite: false,
+                userTags: nil,
+                ownerId: currentUser.nickname
+            )
+
+            // 수집 목록 추가
+            currentUser.collectedVideos.append(newCollectedVideo)
+
+            // 업데이트된 user 객체를 저장 (코인 보상 제외)
+            userService.user = currentUser
+            
+            // 경험치만 지급 (코인 보상 제외)
+            self.userService.rewardUserWithoutCoins(for: video, amount: amount)
+
+            print("✅ 영상이 수집되었습니다 (코인 보상 없음): \(video.title)")
+        } else {
+            print("⚠️ 이미 존재하는 영상: \(video.videoId)")
+        }
+    }
 }

@@ -75,28 +75,13 @@ final class VideoController {
         
         if distance <= Constants.Numbers.smallCircleRadius {
             // 50m 이내 Drop 처리
-            handleDropWithin50m(videoGenre: videoGenre, videoRarity: videoRarity)
+            dropManager.handleDropWithinDefault(videoGenre: videoGenre, videoRarity: videoRarity)
         } else if distance <= Constants.Numbers.largeCircleRadius {
-            // 200m 이내 Pro 구독 메시지 표시
-            //            dropManager.showProSubscriptionMessage()
-            handleDropWithin50m(videoGenre: videoGenre, videoRarity: videoRarity)
+            // 200m 이내 pro 구매 메시지 표시
+            dropManager.showProSubscriptionView(videoGenre: videoGenre, videoRarity: videoRarity)
         } else {
             // 200m 이상 광고 메시지 표시
-            //            dropManager.showAdMessage()
-            handleDropWithin50m(videoGenre: videoGenre, videoRarity: videoRarity)
+            dropManager.showDropWithCachView(videoGenre: videoGenre, videoRarity: videoRarity)
         }
-    }
-    
-    // 50m 이내 Drop 처리
-    private func handleDropWithin50m(videoGenre: VideoGenre, videoRarity: VideoRarity) {
-        print("🎯 클릭된 Circle - Genre: \(videoGenre.rawValue), Rarity: \(videoRarity.rawValue)")
-        
-        // 햅틱 피드백 생성
-        let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
-        feedbackGenerator.prepare()
-        feedbackGenerator.impactOccurred()
-        
-        // DropController 호출 (API 없이)
-        dropManager.presentDropController(genre: videoGenre, rarity: videoRarity)
     }
 }
