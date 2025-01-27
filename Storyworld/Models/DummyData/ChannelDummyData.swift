@@ -10,7 +10,7 @@ import Foundation
 struct ChannelDummyData {
     static let sampleChannels: [Channel] = [
         Channel(
-            id: "channel_001",
+            id: "UCUj6rrhMTR9pipbAWBAMvUQ",
             name: "침착맨",
             profileImageUrl: "https://example.com/images/chimchakman.png",
             description: "침착맨의 다양한 영상들",

@@ -243,22 +243,34 @@ final class DropController: UIViewController {
     }
     
     private func fetchVideosAndAnimate() {
-        CollectionService.shared.fetchUncollectedVideos(for: genre, rarity: rarity) { [weak self] result in
+        CollectionService.shared.fetchRandomVideoByGenre(genre: genre) { result in
             DispatchQueue.main.async {
                 switch result {
-                case .success(let filteredVideos):
-                    guard let video = filteredVideos.randomElement() else {
-                        print("⚠️ No videos available")
-                        return
-                    }
-                    self?.selectedVideo = video
+                case .success(let video):
+                    self.selectedVideo = video
                     CollectionService.shared.saveCollectedVideo(video)
-                    self?.startImageAnimation()
+                    self.startImageAnimation()
                 case .failure(let error):
-                    print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
+                    print("Error fetching video: \(error.localizedDescription)")
                 }
             }
         }
+//        CollectionService.shared.fetchUncollectedVideos(for: genre, rarity: rarity) { [weak self] result in
+//            DispatchQueue.main.async {
+//                switch result {
+//                case .success(let filteredVideos):
+//                    guard let video = filteredVideos.randomElement() else {
+//                        print("⚠️ No videos available")
+//                        return
+//                    }
+//                    self?.selectedVideo = video
+//                    CollectionService.shared.saveCollectedVideo(video)
+//                    self?.startImageAnimation()
+//                case .failure(let error):
+//                    print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
+//                }
+//            }
+//        }
     }
     
     private var imageIndex = 0

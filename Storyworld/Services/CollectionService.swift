@@ -7,6 +7,17 @@
 
 import Foundation
 
+extension VideoGenre {
+    static func fromString(_ rawValue: String) -> VideoGenre {
+        return VideoGenre(rawValue: rawValue) ?? .talk // 기본값 설정
+    }
+}
+
+extension VideoRarity {
+    static func fromString(_ rawValue: String) -> VideoRarity {
+        return VideoRarity(rawValue: rawValue) ?? .silver // 기본값 설정
+    }
+}
 class CollectionService {
     static let shared = CollectionService()
     private let userService = UserService.shared
@@ -36,6 +47,46 @@ class CollectionService {
                 completion(.success(filteredVideos))
             }
         }
+    }
+    func fetchRandomVideoByGenre(genre: VideoGenre, completion: @escaping (Result<Video, Error>) -> Void) {
+        let functionURL = "https://getrandomvideobygenre-bgfikxjrua-uc.a.run.app"
+        
+        guard let url = URL(string: "\(functionURL)?genre=\(genre.rawValue)") else {
+            print("Invalid URL")
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                let statusError = NSError(domain: "HTTPError", code: (response as? HTTPURLResponse)?.statusCode ?? 500, userInfo: nil)
+                completion(.failure(statusError))
+                return
+            }
+
+            guard let data = data else {
+                let noDataError = NSError(domain: "DataError", code: -1, userInfo: nil)
+                completion(.failure(noDataError))
+                return
+            }
+            do {
+                let decoder = JSONDecoder()
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+                formatter.timeZone = TimeZone(secondsFromGMT: 0)
+                decoder.dateDecodingStrategy = .formatted(formatter)
+                let video = try decoder.decode(Video.self, from: data)
+                completion(.success(video))
+            } catch {
+                completion(.failure(error))
+            }
+        }
+
+        task.resume()
     }
     
     // 수집된 모든 영상 즉시 반환
