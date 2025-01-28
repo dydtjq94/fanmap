@@ -48,6 +48,7 @@ class CollectionService {
             }
         }
     }
+    
     func fetchRandomVideoByGenre(genre: VideoGenre, completion: @escaping (Result<Video, Error>) -> Void) {
         let functionURL = "https://getrandomvideobygenre-bgfikxjrua-uc.a.run.app"
         
@@ -81,6 +82,7 @@ class CollectionService {
                 decoder.dateDecodingStrategy = .formatted(formatter)
                 let video = try decoder.decode(Video.self, from: data)
                 completion(.success(video))
+                print("🚀 서버에서 가져온 영상: \(video)")
             } catch {
                 completion(.failure(error))
             }

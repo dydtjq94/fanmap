@@ -90,7 +90,8 @@ final class MapCircleService {
     
     func createFilteredCircleData(visibleTiles: [Tile], tileManager: TileManager) -> [MapCircleService.CircleData] {
         var filteredCircles: [MapCircleService.CircleData] = []
-        let genres: [VideoGenre] = [.entertainment, .talk, .music, .sports, .vlog, .fashion, .food, .education, .game]
+//        let genres: [VideoGenre] = [.entertainment, .talk, .music, .sports, .vlog, .fashion, .food, .education, .game]
+        let genres: [VideoGenre] = [.talk]
         let rarityProbabilities: [(VideoRarity, Double)] = VideoRarity.allCases.map { ($0, $0.probability) }
         // 고정된 Zoom Level과 Length
         let fixedZoomLevel = Constants.Numbers.searchFixedZoomLevel

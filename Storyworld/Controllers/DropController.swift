@@ -215,7 +215,7 @@ final class DropController: UIViewController {
                     view.transform = CGAffineTransform(translationX: 0, y: 0)
                 }
             }
-
+            
             self.dropView.dropImageView.transform = CGAffineTransform(translationX: 0, y: 0)
         }, completion: { _ in
             // 애니메이션 완료 시 햅틱 피드백 실행
@@ -233,49 +233,46 @@ final class DropController: UIViewController {
     @objc private func handleDrop() {
         // 중복 실행 방지
         guard dropView.playButton.isUserInteractionEnabled, openDropButton.isUserInteractionEnabled else { return }
-        
+
         // 버튼 클릭 차단 (시각적으로 그대로 유지)
         dropView.playButton.isUserInteractionEnabled = false
         openDropButton.isUserInteractionEnabled = false
 
-        // 비디오 가져오고 애니메이션 실행
-        fetchVideosAndAnimate()
+        // 애니메이션과 비디오 fetch 동시에 시작
+        let animationStartTime = Date()
+        startImageAnimation()
+        
+        fetchVideosAndAnimate { video in
+            let elapsedTime = Date().timeIntervalSince(animationStartTime)
+            let remainingTime = max(3.0 - elapsedTime, 0) // 3초를 보장하기 위한 대기 시간
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + remainingTime) {
+                if let video = video {
+                    self.showDropResult(with: video)
+                } else {
+                    print("⚠️ No video available.")
+                    self.resetDropView()
+                }
+            }
+        }
     }
-    
-    private func fetchVideosAndAnimate() {
+
+    private func fetchVideosAndAnimate(completion: @escaping (Video?) -> Void) {
         CollectionService.shared.fetchRandomVideoByGenre(genre: genre) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let video):
                     self.selectedVideo = video
                     CollectionService.shared.saveCollectedVideo(video)
-                    self.startImageAnimation()
+                    completion(video)
                 case .failure(let error):
                     print("Error fetching video: \(error.localizedDescription)")
+                    completion(nil)
                 }
             }
         }
-//        CollectionService.shared.fetchUncollectedVideos(for: genre, rarity: rarity) { [weak self] result in
-//            DispatchQueue.main.async {
-//                switch result {
-//                case .success(let filteredVideos):
-//                    guard let video = filteredVideos.randomElement() else {
-//                        print("⚠️ No videos available")
-//                        return
-//                    }
-//                    self?.selectedVideo = video
-//                    CollectionService.shared.saveCollectedVideo(video)
-//                    self?.startImageAnimation()
-//                case .failure(let error):
-//                    print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
-//                }
-//            }
-//        }
     }
-    
-    private var imageIndex = 0
-    private var timer: Timer?
-    
+
     private func startImageAnimation() {
         let largeConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .bold)
         let pauseImage = UIImage(systemName: "pause.fill", withConfiguration: largeConfig)
@@ -283,17 +280,41 @@ final class DropController: UIViewController {
         self.dropView.playButton.setImage(pauseImage, for: .normal)
         againDropViewAnimation()
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            guard let self = self, let video = self.selectedVideo else {
-                print("⚠️ No video available to start animation.")
-                return
-            }
-            self.animateImageSequence {
-                self.showDropResult(with: video)
-            }
+        // 애니메이션 시퀀스 실행
+        self.animateImageSequence {
+            print("🎥 Image animation completed, waiting for video fetch...")
         }
     }
     
+    private func resetDropView() {
+        print("⚠️ Resetting Drop View due to error.")
+        dropView.playButton.isUserInteractionEnabled = true
+        openDropButton.isUserInteractionEnabled = true
+        let playImage = UIImage(systemName: "play.fill")
+        dropView.playButton.setImage(playImage, for: .normal)
+    }
+    
+    private var imageIndex = 0
+    private var timer: Timer?
+    
+//    private func startImageAnimation() {
+//        let largeConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .bold)
+//        let pauseImage = UIImage(systemName: "pause.fill", withConfiguration: largeConfig)
+//        
+//        self.dropView.playButton.setImage(pauseImage, for: .normal)
+//        againDropViewAnimation()
+//        
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+//            guard let self = self, let video = self.selectedVideo else {
+//                print("⚠️ No video available to start animation.")
+//                return
+//            }
+//            self.animateImageSequence {
+//                self.showDropResult(with: video)
+//            }
+//        }
+//    }
+//    
     private func animateImageSequence(completion: @escaping () -> Void) {
         let imageCount = 11
         let images = (1...imageCount).map { "image\($0)" }
@@ -340,3 +361,22 @@ final class DropController: UIViewController {
         }
     }
 }
+
+
+
+//        CollectionService.shared.fetchUncollectedVideos(for: genre, rarity: rarity) { [weak self] result in
+//            DispatchQueue.main.async {
+//                switch result {
+//                case .success(let filteredVideos):
+//                    guard let video = filteredVideos.randomElement() else {
+//                        print("⚠️ No videos available")
+//                        return
+//                    }
+//                    self?.selectedVideo = video
+//                    CollectionService.shared.saveCollectedVideo(video)
+//                    self?.startImageAnimation()
+//                case .failure(let error):
+//                    print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
+//                }
+//            }
+//        }
