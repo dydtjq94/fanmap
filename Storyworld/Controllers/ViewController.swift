@@ -13,11 +13,9 @@ import Turf
 final class ViewController: UIViewController, CLLocationManagerDelegate {
     private var mapView: MapView!
     private var videoLayerMapManager: VideoLayerMapManager!
-
     private let locationManager = CLLocationManager()
     private let mapCircleService = MapCircleService()
     private var videoController: VideoController?
-    private let tileCacheManager = TileCacheManager()
     private let tileManager = TileManager()
     private let tileService = TileService()
     private let locationCircleManager = LocationCircleManager()
@@ -42,16 +40,14 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
             tileManager: tileManager,
             tileService: tileService,
             mapCircleService: mapCircleService,
-            videoController: videoController!
+            videoController: videoController!,
+            videoLayerMapManager: videoLayerMapManager
         )
         
         // NotificationManager 초기화
         notificationManager = NotificationManager(
             onScanButtonTapped: { [weak self] in
                 self?.scanManager?.handleScanButtonTapped()
-            },
-            onClearCacheTapped: { [weak self] in
-                self?.handleClearCacheTapped()
             },
             onAppWillEnterForeground: { [weak self] in
                 self?.handleAppWillEnterForeground()
@@ -104,10 +100,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         // ✅ MapView를 뷰에 추가
         view.addSubview(mapView)
     }
-    
-    @objc private func handleClearCacheTapped() {
-        tileCacheManager.clearCache()
-    }
+
     
     @objc private func handleAppWillEnterForeground() {
         guard let lastBackgroundTime = lastBackgroundTime else { return }
@@ -183,24 +176,15 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
     private func handleStyleLoadedEvent() {
         styleLoadedCancelable = mapView.mapboxMap.onStyleLoaded.observe { [weak self] _ in
             guard let self = self else { return }
-            
-            // 사용자 위치 가져오기
+
             let coordinate = self.mapView.location.latestLocation?.coordinate
-            ?? CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780) // 기본 위치: 서울
-            
-            // 초기 카메라 설정
+            ?? CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780) // 기본 위치
+
             self.cameraManager?.setInitialCamera(to: coordinate)
-            print("🛠️ 스타일 로드 완료, 초기 카메라 설정 - \(coordinate.latitude), \(coordinate.longitude)")
-            
-            // 원 추가
             self.locationCircleManager.addCircleLayers(to: self.mapView, at: coordinate)
-            
-            // 타일 데이터 로드 및 Circle 레이어 추가
-            loadTilesAndAddCircles(at: coordinate)
-            
-            // 스타일 및 불필요한 레이어 제거
+            self.loadTilesAndAddCircles(at: coordinate)
             self.mapStyleManager?.applyDarkStyle()
-            reloadLocationPuck()
+            self.reloadLocationPuck()
         }
     }
     
@@ -218,7 +202,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
     }
 
     /// 최적화된 타일 로드 및 추가 함수
-    private func loadTilesAndAddCircles(at coordinate: CLLocationCoordinate2D, isScan: Bool = false) {
+    func loadTilesAndAddCircles(at coordinate: CLLocationCoordinate2D, isScan: Bool = false) {
         let visibleTiles = tileManager.tilesInRange(center: coordinate)
         print("📍 현재 보이는 타일: \(visibleTiles.count)개")
 
@@ -233,6 +217,8 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
 
         for tile in visibleTiles {
             if let tileInfo = tileService.getTileInfo(for: tile) {
+                print("🔍 가시성 업데이트 대상 타일: \(tile.toKey()), isVisible: \(tileInfo.isVisible)")
+                 
                 if tileInfo.isVisible {
                     print("✔️ 이미 추가된 타일: \(tile.toKey()), 건너뛰기")
                     continue
@@ -249,6 +235,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
 
         // 가시성 업데이트를 한 번에 처리
         if !tilesToUpdate.isEmpty {
+            print("📝 가시성 업데이트를 시도할 타일 목록: \(tilesToUpdate.map { $0.toKey() })")
             tileService.batchUpdateTileVisibility(tiles: tilesToUpdate, isVisible: true)
         }
 

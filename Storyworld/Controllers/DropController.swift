@@ -29,12 +29,12 @@ final class DropController: UIViewController {
     
     private let dropView = DropView()
     private var selectedVideo: Video?
-    private let genre: VideoGenre // 장르
-    private let rarity: VideoRarity // 희귀도
+    private let circleData: MapCircleService.CircleData // 🔥 CircleData를 저장
+    private let mapView: MapView
     
-    init(genre: VideoGenre, rarity: VideoRarity) {
-        self.genre = genre
-        self.rarity = rarity
+    init(circleData: MapCircleService.CircleData, mapView: MapView) {
+        self.circleData = circleData
+        self.mapView = mapView
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -69,12 +69,12 @@ final class DropController: UIViewController {
         view.addSubview(dismissButton)
         
         // 희귀도 이미지 설정
-        rarityImageView.image = UIImage(named: rarity.imageName)
+        rarityImageView.image = UIImage(named: circleData.rarity.imageName)
         rarityImageView.contentMode = .scaleAspectFit
         rarityImageView.translatesAutoresizingMaskIntoConstraints = false
         
-        rarityLabel.text = rarity.rawValue
-        rarityLabel.textColor = rarity.uiColor
+        rarityLabel.text = circleData.rarity.rawValue
+        rarityLabel.textColor = circleData.rarity.uiColor
         rarityLabel.font = UIFont.boldSystemFont(ofSize: 12)
         
         // 희귀도 StackView 구성
@@ -86,7 +86,7 @@ final class DropController: UIViewController {
         rarityStackView.translatesAutoresizingMaskIntoConstraints = false
         
         // 희귀도 컨테이너 뷰 설정 (배경 색 추가)
-        rarityContainerView.backgroundColor = rarity.backgroundColor
+        rarityContainerView.backgroundColor = circleData.rarity.backgroundColor
         rarityContainerView.layer.cornerRadius = 8
         rarityContainerView.translatesAutoresizingMaskIntoConstraints = false
         rarityContainerView.addSubview(rarityStackView)
@@ -94,12 +94,12 @@ final class DropController: UIViewController {
         // 장르 SF Symbol 설정
         genreImageView.image = UIImage(systemName: "play.fill")?.withRenderingMode(.alwaysTemplate)
         //        genreImageView.image = UIImage(named: "chim")
-        genreImageView.tintColor = genre.uiColor
+        genreImageView.tintColor = circleData.genre.uiColor
         genreImageView.contentMode = .scaleAspectFit
         genreImageView.translatesAutoresizingMaskIntoConstraints = false
         
-        genreLabel.text = genre.localized()
-        genreLabel.textColor = genre.uiColor
+        genreLabel.text = circleData.genre.localized()
+        genreLabel.textColor = circleData.genre.uiColor
         genreLabel.font = UIFont.boldSystemFont(ofSize: 12)
         
         // 장르 StackView 구성
@@ -111,7 +111,7 @@ final class DropController: UIViewController {
         genreStackView.translatesAutoresizingMaskIntoConstraints = false
         
         // 장르 컨테이너 뷰 설정 (배경 색 추가)
-        genreContainerView.backgroundColor = genre.backgroundColor
+        genreContainerView.backgroundColor = circleData.genre.backgroundColor
         genreContainerView.layer.cornerRadius = 8
         genreContainerView.translatesAutoresizingMaskIntoConstraints = false
         genreContainerView.addSubview(genreStackView)
@@ -137,7 +137,7 @@ final class DropController: UIViewController {
         
         // DropView 추가
         dropView.translatesAutoresizingMaskIntoConstraints = false
-        dropView.backgroundColor = genre.backgroundColor
+        dropView.backgroundColor = circleData.genre.backgroundColor
         view.addSubview(dropView)
         
         // Constraints 설정
@@ -187,7 +187,7 @@ final class DropController: UIViewController {
     
     private func configureInitialView() {
         //         DropView에 기본 정보 업데이트
-        dropView.dropSettingView(genre: genre.localized(), rarity: rarity.rawValue)
+        dropView.dropSettingView(genre: circleData.genre.localized(), rarity: circleData.rarity.rawValue)
     }
     
     private func startDropViewAnimation() {
@@ -258,7 +258,15 @@ final class DropController: UIViewController {
     }
 
     private func fetchVideosAndAnimate(completion: @escaping (Video?) -> Void) {
-        CollectionService.shared.fetchRandomVideoByGenre(genre: genre) { result in
+        // 🔥 타일 데이터 업데이트
+        TileService().updateLastDropTime(for: circleData)
+        // ✅ DropController에서 직접 지도 업데이트
+
+        // ✅ mapView를 이용해서 VideoLayerMapManager 생성 후 업데이트 실행
+        VideoLayerMapManager(mapView: mapView).updateVideoCircleLayer(for: circleData)
+
+        
+        CollectionService.shared.fetchRandomVideoByGenre(genre: circleData.genre) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let video):
@@ -281,7 +289,8 @@ final class DropController: UIViewController {
         againDropViewAnimation()
         
         // 애니메이션 시퀀스 실행
-        self.animateImageSequence {
+        self.animateImageSequence { [weak self] in
+            guard let self = self else { return }
             print("🎥 Image animation completed, waiting for video fetch...")
         }
     }
@@ -296,57 +305,54 @@ final class DropController: UIViewController {
     
     private var imageIndex = 0
     private var timer: Timer?
-    
-//    private func startImageAnimation() {
-//        let largeConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .bold)
-//        let pauseImage = UIImage(systemName: "pause.fill", withConfiguration: largeConfig)
-//        
-//        self.dropView.playButton.setImage(pauseImage, for: .normal)
-//        againDropViewAnimation()
-//        
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-//            guard let self = self, let video = self.selectedVideo else {
-//                print("⚠️ No video available to start animation.")
-//                return
-//            }
-//            self.animateImageSequence {
-//                self.showDropResult(with: video)
-//            }
-//        }
-//    }
-//    
+
     private func animateImageSequence(completion: @escaping () -> Void) {
         let imageCount = 11
         let images = (1...imageCount).map { "image\($0)" }
-        let totalDuration: TimeInterval = 3
         let interval: TimeInterval = 0.1
+        var elapsedTime: TimeInterval = 0 // 경과 시간 추적
+
+        let animationStartTime = Date()
+        var animationShouldStop = false // 애니메이션 종료 플래그
+
+        imageIndex = Int.random(in: 1...10)
         
-        let randomImageNumber = Int.random(in: 1...10)
-        
-        imageIndex = randomImageNumber
-        
-        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] timer in
+        // 타이머로 애니메이션 반복
+        self.timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] timer in
             guard let self = self else { return }
             
+            // 이미지 순환 업데이트
             self.dropView.dropImageView.image = UIImage(named: images[self.imageIndex])
             
+            // 햅틱 피드백
             let generator = UIImpactFeedbackGenerator(style: .heavy)
             generator.prepare()
             generator.impactOccurred()
             
             self.imageIndex += 1
-            
             if self.imageIndex >= images.count {
                 self.imageIndex = 0
-                self.timer?.invalidate()
+            }
+            
+            // 경과 시간 업데이트
+            elapsedTime = Date().timeIntervalSince(animationStartTime)
+            
+            // 애니메이션 종료 조건
+            if elapsedTime >= 10.0 || animationShouldStop {
+                timer.invalidate() // 타이머 중지
                 self.timer = nil
+                completion() // 종료 시 콜백 실행
             }
         }
         
-        // 3초 후 타이머 종료
-        DispatchQueue.main.asyncAfter(deadline: .now() + totalDuration) {
-            timer.invalidate()  // 타이머 중지
-            completion()
+        // 3초 이후 fetch 완료 여부 확인
+        DispatchQueue.global().asyncAfter(deadline: .now() + 3.0) { [weak self] in
+            guard let self = self else { return }
+            
+            // fetch가 완료되면 애니메이션 종료 플래그 설정
+            DispatchQueue.main.async {
+                animationShouldStop = true
+            }
         }
     }
     
@@ -354,8 +360,8 @@ final class DropController: UIViewController {
         DropResultViewManager.createDropResultView(
             in: self.view,
             video: video,
-            genre: genre,
-            rarity: rarity
+            genre: circleData.genre,
+            rarity: circleData.rarity
         ) {
             self.dismiss(animated: true, completion: nil)
         }

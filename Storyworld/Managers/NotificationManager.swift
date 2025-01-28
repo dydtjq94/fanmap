@@ -11,20 +11,17 @@ final class NotificationManager: NSObject {
     // MARK: - Properties
     private var handleScanButton: (() -> Void)?
     private var handleLocationButton: (() -> Void)?
-    private var handleClearCache: (() -> Void)?
     private var handleAppForeground: (() -> Void)?
     private var handleAppBackground: (() -> Void)?
     
     // MARK: - Initializer
     init(
         onScanButtonTapped: @escaping () -> Void,
-        onClearCacheTapped: @escaping () -> Void,
         onAppWillEnterForeground: @escaping () -> Void,
         onAppDidEnterBackground: @escaping () -> Void,
         onLocationButtonTapped: @escaping () -> Void
     ) {
         self.handleScanButton = onScanButtonTapped
-        self.handleClearCache = onClearCacheTapped
         self.handleAppForeground = onAppWillEnterForeground
         self.handleAppBackground = onAppDidEnterBackground
         self.handleLocationButton = onLocationButtonTapped
@@ -38,12 +35,6 @@ final class NotificationManager: NSObject {
             name: .scanButtonTapped,
             object: nil
         )
-//        NotificationCenter.default.addObserver(
-//            self,
-//            selector: #selector(handleClearCacheTapped),
-//            name: .clearCacheTapped,
-//            object: nil
-//        )
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleLocationButtonTapped),
@@ -74,11 +65,6 @@ final class NotificationManager: NSObject {
     @objc private func handleLocationButtonTapped() {
         print("📍 내 위치 버튼 클릭됨")
         handleLocationButton?()
-    }
-    
-    @objc private func handleClearCacheTapped() {
-        print("🗑️ 캐시 삭제 버튼이 눌렸습니다.")
-        handleClearCache?()
     }
     
     @objc private func handleAppWillEnterForeground() {

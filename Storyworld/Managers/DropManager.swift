@@ -17,14 +17,6 @@ final class DropManager {
         self.mapView = mapView
     }
     
-    func displayVideoDetails(video: Video) {
-        print("🎥 Video Details:")
-        print("🎬 Title: \(video.title)")
-        print("🎭 Genre: \(video.genre.rawValue)")
-        print("🌟 Rarity: \(video.rarity.rawValue)")
-        // UI 업데이트 로직 추가 가능 (예: 포스터, 제목, 즐겨찾기 버튼 표시)
-    }
-    
     func showProSubscriptionView(videoGenre: VideoGenre, videoRarity: VideoRarity) {
         let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
         feedbackGenerator.prepare()
@@ -43,7 +35,7 @@ final class DropManager {
         }
     }
     
-    func showDropWithCachView(videoGenre: VideoGenre, videoRarity: VideoRarity) {
+    func showDropWithCoinView(circleData: MapCircleService.CircleData) {
         let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
         feedbackGenerator.prepare()
         feedbackGenerator.impactOccurred()
@@ -53,7 +45,7 @@ final class DropManager {
               let window = scene.windows.first,
               let topVC = window.rootViewController {
                
-               let proView = DropWithCoinView(genre: videoGenre, rarity: videoRarity)
+               let proView = DropWithCoinView(circleData: circleData)
                let hostingController = UIHostingController(rootView: proView)
 
                // 배경을 투명하게 설정
@@ -64,20 +56,30 @@ final class DropManager {
            }
     }
     
-    func handleDropWithinDefault(videoGenre: VideoGenre, videoRarity: VideoRarity) {
-        print("🎯 클릭된 Circle - Genre: \(videoGenre.rawValue), Rarity: \(videoRarity.rawValue)")
+    func handleDropWithinDefault(circleData: MapCircleService.CircleData) {
+        print("🎯 클릭된 Circle - \(circleData)")
         
-        // 햅틱 피드백 생성
-        let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
-        feedbackGenerator.prepare()
-        feedbackGenerator.impactOccurred()
+        // 남은 쿨다운 계산
+        let currentTime = Date().timeIntervalSince1970
+        let elapsedTime = currentTime - (circleData.lastDropTime?.timeIntervalSince1970 ?? 0)
+        let remainingCooldown = max(circleData.cooldownTime - elapsedTime, 0)
         
-        // DropController 호출 (API 없이)
-        presentDropController(genre: videoGenre, rarity: videoRarity)
+        if remainingCooldown > 0 {
+            // 쿨다운 중이면 DropWithCoinView를 보여줌
+            print("⏳ 쿨다운 중 - 남은 시간: \(remainingCooldown)초")
+            showDropWithCoinView(circleData: circleData)
+        } else {
+            // 쿨다운이 끝났으면 DropController를 보여줌
+            print("✅ 쿨다운 종료 - 드롭 가능")
+            let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
+            feedbackGenerator.prepare()
+            feedbackGenerator.impactOccurred()
+            presentDropController(circleData: circleData)
+        }
     }
     
-    func presentDropController(genre: VideoGenre, rarity: VideoRarity) {
-        let dropController = DropController(genre: genre, rarity: rarity)
+    func presentDropController(circleData: MapCircleService.CircleData) {
+        let dropController = DropController(circleData: circleData, mapView: mapView)
         dropController.modalPresentationStyle = .overFullScreen
         dropController.modalTransitionStyle = .coverVertical
         mapView.window?.rootViewController?.present(dropController, animated: true, completion: nil)

@@ -9,15 +9,23 @@ final class ScanManager {
     private let tileService: TileService
     private let mapCircleService: MapCircleService
     private let videoController: VideoController
+    private let videoLayerMapManager: VideoLayerMapManager // ✅ 추가
     private var scanCircles: [UIView] = []
     private var isZooming = false
     
-    init(mapView: MapView, tileManager: TileManager, tileService: TileService, mapCircleService: MapCircleService, videoController: VideoController) {
+    init(mapView: MapView,
+         tileManager: TileManager,
+         tileService: TileService,
+         mapCircleService: MapCircleService,
+         videoController: VideoController,
+         videoLayerMapManager: VideoLayerMapManager) {  // ✅ 추가됨
+
         self.mapView = mapView
         self.tileManager = tileManager
         self.tileService = tileService
         self.mapCircleService = mapCircleService
         self.videoController = videoController
+        self.videoLayerMapManager = videoLayerMapManager  // ✅ 추가됨
     }
     
     @objc func handleScanButtonTapped() {
@@ -229,7 +237,7 @@ final class ScanManager {
                 print("✔️ 이미 추가된 타일 건너뜀: \(tile.toKey())")
                 continue
             }
-
+            
             tilesToUpdate.append(tile)
             DispatchQueue.main.async {
                 self.videoController.videoLayerMapManager.addGenreCircles(
@@ -239,12 +247,11 @@ final class ScanManager {
                 )
             }
         }
-
+        
         // 가시성 업데이트를 한 번에 처리
         if !tilesToUpdate.isEmpty {
             tileService.batchUpdateTileVisibility(tiles: tilesToUpdate, isVisible: true)
         }
-
         print("✅ 타일 추가 완료")
     }
 

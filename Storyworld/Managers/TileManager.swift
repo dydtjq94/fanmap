@@ -33,9 +33,17 @@ extension Tile {
 final class TileManager {
     
     struct TileInfo: Codable {
-        let layerData: [MapCircleService.CircleData]
-        var isVisible: Bool
-    }
+            let id: String // 고유 식별자
+            var layerData: [MapCircleService.CircleData] // 해당 타일의 Video-Circle 데이터
+            var isVisible: Bool // 타일이 현재 표시되고 있는지 여부
+
+            init(id: String = UUID().uuidString, layerData: [MapCircleService.CircleData], isVisible: Bool) {
+                self.id = id
+                self.layerData = layerData
+                self.isVisible = isVisible
+            }
+        }
+
     
     /// 특정 줌 레벨에서 중심 좌표 기준으로 가로 세로 1,000m 범위 내 타일 계산
     func tilesInRange(center: CLLocationCoordinate2D) -> [Tile] {

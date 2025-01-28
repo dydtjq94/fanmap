@@ -31,7 +31,6 @@ final class VideoController {
     
     func updateUIWithVideoData() {
         guard let video = selectedVideo else { return }
-        dropManager.displayVideoDetails(video: video)
     }
     
     // Feature 선택 처리
@@ -43,23 +42,16 @@ final class VideoController {
         
         let coordinates = pointGeometry.coordinates
         
-        guard let genreValue = feature.properties?["genre"],
-              case let .string(genre) = genreValue,
-              let rarityValue = feature.properties?["rarity"],
-              case let .string(rarity) = rarityValue else {
-            print("⚠️ Feature 속성에서 데이터를 추출할 수 없습니다.")
+        print("🔍 Feature Properties: \(feature.properties ?? [:])") // ✅ 디버깅 추가
+        
+        guard let circleDataValue = feature.properties?["circleData"],
+              case let .string(encodedCircleData) = circleDataValue,
+              let circleData = decodeCircleData(from: encodedCircleData) else {
+            print("⚠️ Feature 속성에서 CircleData를 추출할 수 없습니다.")
             return
         }
         
-        guard let videoGenre = VideoGenre(rawValue: genre) else {
-            print("⚠️ 잘못된 장르 데이터입니다.")
-            return
-        }
-        
-        guard let videoRarity = VideoRarity(rawValue: rarity) else {
-            print("⚠️ 잘못된 등급 데이터입니다.")
-            return
-        }
+        print("circledata: \(circleData)")
         
         guard let userLocation = mapView.location.latestLocation?.coordinate else {
             print("⚠️ 사용자 위치를 가져올 수 없습니다.")
@@ -75,13 +67,33 @@ final class VideoController {
         
         if distance <= Constants.Numbers.smallCircleRadius {
             // 50m 이내 Drop 처리
-            dropManager.handleDropWithinDefault(videoGenre: videoGenre, videoRarity: videoRarity)
+            dropManager.handleDropWithinDefault(circleData: circleData)
         } else if distance <= Constants.Numbers.largeCircleRadius {
             // 200m 이내 pro 구매 메시지 표시
-            dropManager.showProSubscriptionView(videoGenre: videoGenre, videoRarity: videoRarity)
+//            dropManager.showProSubscriptionView(circleData: circleData)
         } else {
             // 200m 이상 광고 메시지 표시
-            dropManager.showDropWithCachView(videoGenre: videoGenre, videoRarity: videoRarity)
+            dropManager.showDropWithCoinView(circleData: circleData)
+//            dropManager.handleDropWithinDefault(circleData: circleData)
+        }
+    }
+    
+    func decodeCircleData(from jsonString: String) -> MapCircleService.CircleData? {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase // ✅ 변환된 값이 올바르게 매핑되도록 설정
+
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            print("❌ JSON 변환 실패: \(jsonString)")
+            return nil
+        }
+        
+        do {
+            let decodedData = try decoder.decode(MapCircleService.CircleData.self, from: jsonData)
+            print("✅ 디코딩 성공: \(decodedData)")
+            return decodedData
+        } catch {
+            print("❌ CircleData 디코딩 실패: \(error.localizedDescription)")
+            return nil
         }
     }
 }

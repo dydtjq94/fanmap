@@ -19,18 +19,18 @@ struct DropWithCoinView: View {
     @State private var blurOffset: CGSize = .zero
     @State private var imageOffset: CGSize = .zero
     @State private var dropPrice: Int  // 가격 상태 변수 추가
+    @State private var cooldownRemainingTime: TimeInterval = 0 // 남은 쿨다운 시간
+    @State private var cooldownTimer: Timer?
     
-    let genre: VideoGenre
-    let rarity: VideoRarity
+    let circleData: MapCircleService.CircleData
     
     let totalDuration: TimeInterval = 3
     let interval: TimeInterval = 0.1
     let imageCount = 11
     
-    init(genre: VideoGenre, rarity: VideoRarity) {
-        self.genre = genre
-        self.rarity = rarity
-        self._dropPrice = State(initialValue: UserStatusManager.shared.getCoinDeduct(for: rarity))
+    init(circleData: MapCircleService.CircleData) {
+        self.circleData = circleData
+        self._dropPrice = State(initialValue: UserStatusManager.shared.getCoinDeduct(for: circleData.rarity))
     }
     
     var body: some View {
@@ -83,14 +83,21 @@ struct DropWithCoinView: View {
                 }
                 .frame(maxWidth: .infinity)
                 
-                Text("드롭 주변으로 이동이 필요해요")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(.white)
+                // 쿨다운 시간이 남아있으면 시간 표시, 아니면 안내 문구
+                if cooldownRemainingTime > 0 {
+                    Text("쿨다운 남은 시간: \(formatTime(cooldownRemainingTime))")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                } else {
+                    Text("드롭 주변으로 이동이 필요해요")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                }
                 
                 // 희귀도 및 장르 뱃지
                 HStack(spacing: 12) {
-                    RarityBadgeView(rarity: rarity)
-                    GenreBadgeView(genre: genre)
+                    RarityBadgeView(rarity: circleData.rarity)
+                    GenreBadgeView(genre: circleData.genre)
                 }
                 .padding(.top, 32)
                 
@@ -117,16 +124,19 @@ struct DropWithCoinView: View {
             }
             .frame(maxWidth: UIScreen.main.bounds.width * 0.8)  // 화면의 80% 너비로 조정
             .padding(20)
-            .background(Color(rarity.dropBackgroundColor))
+            .background(Color(circleData.rarity.dropBackgroundColor))
             .cornerRadius(20)
             .shadow(radius: 10)
+        }
+        .onAppear {
+            startCooldownTimer()
         }
         .fullScreenCover(isPresented: $showDropResultView) {
             if let video = selectedVideo {
                 DropResultWithCoinView(
                     video: video,
-                    genre: genre,
-                    rarity: rarity,
+                    genre: circleData.genre,
+                    rarity: circleData.rarity,
                     closeAction: {
                         showDropResultView = false
                         presentationMode.wrappedValue.dismiss()
@@ -134,6 +144,29 @@ struct DropWithCoinView: View {
                 )
             }
         }
+    }
+    
+    private func startCooldownTimer() {
+        let currentTime = Date().timeIntervalSince1970
+        let elapsedTime = currentTime - (circleData.lastDropTime?.timeIntervalSince1970 ?? 0)
+        cooldownRemainingTime = max(circleData.cooldownTime - elapsedTime, 0)
+        
+        if cooldownRemainingTime > 0 {
+            cooldownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                if cooldownRemainingTime > 0 {
+                    cooldownRemainingTime -= 1
+                } else {
+                    cooldownTimer?.invalidate()
+                }
+            }
+        }
+    }
+    
+    private func formatTime(_ time: TimeInterval) -> String {
+        let hours = Int(time) / 3600
+        let minutes = (Int(time) % 3600) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
     
     private func startDropViewAnimation() {
@@ -185,7 +218,7 @@ struct DropWithCoinView: View {
     }
     
     private func fetchVideosAndAnimate() {
-        CollectionService.shared.fetchUncollectedVideos(for: genre, rarity: rarity) { result in
+        CollectionService.shared.fetchUncollectedVideos(for: circleData.genre, rarity: circleData.rarity) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let filteredVideos):
@@ -214,7 +247,7 @@ struct DropWithCoinView: View {
                         }
                         isAnimating = false
                     }
-
+                    
                 case .failure(let error):
                     print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
                     playIcon = "play.fill"
