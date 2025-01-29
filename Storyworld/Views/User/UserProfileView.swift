@@ -68,7 +68,7 @@ struct UserProfileView: View {
                         // 수집한 영상 수 섹션
                         HStack(spacing: 2) {
                             Image(systemName: "film.stack.fill")
-                                .foregroundColor(Color(AppColors.mainColor))
+                                .foregroundColor(Color(AppColors.green1))
                                 .font(.system(size: 12))
                             
                             Text("\(userService.user?.collectedVideos.count ?? 0)")

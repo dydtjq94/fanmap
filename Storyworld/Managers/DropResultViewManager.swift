@@ -191,9 +191,9 @@ final class DropResultViewManager {
         infoStackView.translatesAutoresizingMaskIntoConstraints = false
         
         // Open Drop Button 설정
-        closeButton.setTitle("Collect", for: .normal)
+        closeButton.setTitle("수집하기", for: .normal)
         closeButton.setTitleColor(.black, for: .normal)
-        closeButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+        closeButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .heavy)
         closeButton.backgroundColor = AppColors.mainColor
         closeButton.layer.cornerRadius = 10
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
@@ -266,7 +266,7 @@ final class DropResultViewManager {
             // Open Drop Button (화면 최하단)
             closeButton.bottomAnchor.constraint(equalTo: parentView.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             closeButton.centerXAnchor.constraint(equalTo: parentView.centerXAnchor),
-            closeButton.widthAnchor.constraint(equalTo: parentView.widthAnchor, multiplier: 0.6),
+            closeButton.widthAnchor.constraint(equalTo: parentView.widthAnchor, multiplier: 0.7),
             closeButton.heightAnchor.constraint(equalToConstant: 50),
         ])
     }

@@ -13,18 +13,21 @@ final class NotificationManager: NSObject {
     private var handleLocationButton: (() -> Void)?
     private var handleAppForeground: (() -> Void)?
     private var handleAppBackground: (() -> Void)?
+    private var handleScanCompleted: (() -> Void)? // ✅ Scan 완료 핸들러 추가
     
     // MARK: - Initializer
     init(
         onScanButtonTapped: @escaping () -> Void,
         onAppWillEnterForeground: @escaping () -> Void,
         onAppDidEnterBackground: @escaping () -> Void,
-        onLocationButtonTapped: @escaping () -> Void
+        onLocationButtonTapped: @escaping () -> Void,
+        onScanCompleted: @escaping () -> Void // ✅ Scan 완료 핸들러 추가
     ) {
         self.handleScanButton = onScanButtonTapped
         self.handleAppForeground = onAppWillEnterForeground
         self.handleAppBackground = onAppDidEnterBackground
         self.handleLocationButton = onLocationButtonTapped
+        self.handleScanCompleted = onScanCompleted // ✅ 추가
     }
     
     // MARK: - Setup Notifications
@@ -53,6 +56,12 @@ final class NotificationManager: NSObject {
             name: UIApplication.didEnterBackgroundNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleScanCompletedStatus),
+            name: .scanCompleted,
+            object: nil
+        ) // ✅ Scan 완료 감지 추가
     }
     
     // MARK: - Notification Handlers
@@ -75,6 +84,11 @@ final class NotificationManager: NSObject {
     @objc private func handleAppDidEnterBackground() {
         print("🔄 앱이 백그라운드로 전환되었습니다.")
         handleAppBackground?()
+    }
+    
+    @objc private func handleScanCompletedStatus() { // ✅ Scan 완료 핸들러
+        print("✅ Scan 완료 - Puck 리로드 실행")
+        handleScanCompleted?()
     }
     
     // MARK: - Deinit

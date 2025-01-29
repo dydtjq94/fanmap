@@ -61,8 +61,6 @@ final class VideoLayerMapManager {
                     print("❌ CircleData를 JSON으로 변환하는 데 실패했습니다.")
                 }
                 
-                print("Adding Feature ID: \(item.id), circleData 포함됨. \(item)")
-                
                 var geoJSONSource = GeoJSONSource(id: sourceId)
                 geoJSONSource.data = .feature(feature)
                 

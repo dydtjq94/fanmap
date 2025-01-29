@@ -15,4 +15,5 @@ struct AppColors {
     
     static let mapVideoIcon = UIColor(hex: "#ebe7e0").withAlphaComponent(1.0)
     static let mainColor = UIColor(hex: "#ff6464").withAlphaComponent(1.0)
+    static let green1 = UIColor(hex: "#33f591").withAlphaComponent(1.0)
 }

@@ -44,7 +44,7 @@ struct PlaylistView: View {
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 36)
+                    .padding(.top, 24)
                     .padding(.bottom, 48)
             } else {
                 VStack(alignment: .leading, spacing: 12) {

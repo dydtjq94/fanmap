@@ -64,15 +64,15 @@ struct DropResultWithCoinView: View {
                 Spacer()
                 // Collect 버튼
                 Button(action: closeAction) {
-                    Text("Collect")
+                    Text("수집하기")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.black)
-                        .frame(maxWidth: UIScreen.main.bounds.width * 0.8)  // 화면의 80% 너비로 조정
+                        .frame(maxWidth: UIScreen.main.bounds.width * 0.6)  // 화면의 80% 너비로 조정
                         .padding()
                         .background(Color(AppColors.mainColor))
                         .cornerRadius(10)
-                        .padding(.horizontal, 40)
                 }
+                .padding(.bottom, 16)
             }
         }
         .onAppear {

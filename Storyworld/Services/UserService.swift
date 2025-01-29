@@ -14,30 +14,41 @@ class UserService: ObservableObject {
     private let userDefaultsKey = "currentUser"
     
     func initializeUserIfNeeded() {
-        if let savedUser = loadUser() {
-            print("✅ User loaded from UserDefaults: \(savedUser.nickname)")
-            DispatchQueue.main.async {
+        DispatchQueue.main.async {
+            if let savedUser = self.loadUser() {
+                print("✅ 기존 유저 로드: \(savedUser.nickname)")
                 self.user = savedUser
+            } else {
+                print("⏩ 기존 유저 없음 (새 유저 생성 X, StartView에서 처리)")
+                self.user = nil
             }
-        } else {
-            print("⏩ No existing user found, creating new user...")
-            let newUser = User(
-                nickname: "Guest",
-                profileImageURL: nil,
-                bio: "소개글을 작성하세요",
-                experience: 0,
-                balance: 100000,
-                gems: 0,
-                collectedVideos: [],
-                playlists: []
-            )
-            saveUser(newUser)
-            DispatchQueue.main.async {
-                self.user = newUser
-            }
-            print("New user created: \(newUser)")
         }
     }
+    
+    func createNewUser() {
+        let newUser = User(
+            nickname: "Guest", // ✅ 기본 닉네임 설정
+            profileImageURL: nil,
+            bio: "소개글을 작성하세요",
+            experience: 0,
+            balance: 100000,
+            gems: 0,
+            collectedVideos: [],
+            playlists: []
+        )
+        saveUser(newUser) // ✅ 유저 정보를 저장
+        DispatchQueue.main.async {
+            self.user = newUser
+        }
+    }
+
+    
+    func updateNickname(_ newNickname: String) {
+        guard var user = user else { return }
+        user.nickname = newNickname
+        saveUser(user)
+    }
+
     
     private func loadUser() -> User? {
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {

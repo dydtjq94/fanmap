@@ -125,15 +125,12 @@ final class TileService {
             let tileKey = tile.toKey()
             
             if var existingTileInfo = tileData[tileKey] {
-                print("🔍 기존 타일 정보: \(existingTileInfo)")
                 if existingTileInfo.isVisible == isVisible {
-                    print("✔️ 이미 동일한 가시성 상태인 타일: \(tileKey), 생략")
                     continue
                 }
                 
                 existingTileInfo.isVisible = isVisible
                 tileData[tileKey] = existingTileInfo
-                print("🔄 업데이트된 타일 정보: \(existingTileInfo)")
                 
                 updatedTileKeys.append(tileKey)
                 updated = true
@@ -143,11 +140,6 @@ final class TileService {
         }
         
         if updated {
-            print("📝 업데이트된 타일 키 목록: \(updatedTileKeys)")
-            
-            // 저장 직전 tileData 상태 출력
-            print("🔄 저장 직전 타일 데이터: \(tileData.map { "\($0.key): \($0.value)" })")
-            
             saveTileData()
             print("✅ 업데이트된 타일 저장 완료")
         } else {
