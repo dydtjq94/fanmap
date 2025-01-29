@@ -34,6 +34,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         setupMapView()
         setupLocationManager()
         videoLayerMapManager = VideoLayerMapManager(mapView: mapView)
+        videoLayerMapManager.startCooldownUpdate()
 
         scanManager = ScanManager(
             mapView: mapView,

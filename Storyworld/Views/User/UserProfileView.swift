@@ -57,7 +57,7 @@ struct UserProfileView: View {
                         // 레벨 섹션
                         HStack(spacing: 2) {
                             Image(systemName: "arrow.up.square.fill")
-                                .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
+                                .foregroundColor(Color(AppColors.mainColor))
                                 .font(.system(size: 12))
                             
                             Text("Lv. \(UserStatusManager.shared.calculateLevel(from: userService.user?.experience ?? 0))")
@@ -68,7 +68,7 @@ struct UserProfileView: View {
                         // 수집한 영상 수 섹션
                         HStack(spacing: 2) {
                             Image(systemName: "film.stack.fill")
-                                .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
+                                .foregroundColor(Color(AppColors.mainColor))
                                 .font(.system(size: 12))
                             
                             Text("\(userService.user?.collectedVideos.count ?? 0)")

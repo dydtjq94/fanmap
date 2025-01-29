@@ -224,4 +224,9 @@ final class TileService {
 
         print("💾 타일 데이터 업데이트 완료: \(tileKey)")
     }
+    
+    /// 🔹 현재 보이는 (isVisible == true) 타일 목록 반환
+    func getAllVisibleTiles() -> [TileManager.TileInfo] {
+        return tileData.values.filter { !$0.isVisible }
+    }
 }

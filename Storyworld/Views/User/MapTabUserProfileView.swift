@@ -12,6 +12,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct MapTabUserProfileView: View {
     @EnvironmentObject var userService: UserService
@@ -51,7 +52,7 @@ struct MapTabUserProfileView: View {
                 HStack(spacing: 12) {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.up.square.fill")
-                            .foregroundColor(Color(UIColor(hex:"#A1A1A1")))
+                            .foregroundColor(Color(AppColors.mainColor))
                             .font(.system(size: 12))
                         Text("Lv. \(UserStatusManager.shared.calculateLevel(from: userService.user?.experience ?? 0))")
                             .font(.system(size: 12, weight: .bold))

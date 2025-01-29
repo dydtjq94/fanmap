@@ -14,4 +14,5 @@ struct AppColors {
 //    static let largeScanCircle = UIColor(hex: "#adb3b1").withAlphaComponent(0.6)
     
     static let mapVideoIcon = UIColor(hex: "#ebe7e0").withAlphaComponent(1.0)
+    static let mainColor = UIColor(hex: "#ff6464").withAlphaComponent(1.0)
 }

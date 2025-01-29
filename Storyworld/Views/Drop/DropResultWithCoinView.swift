@@ -66,9 +66,10 @@ struct DropResultWithCoinView: View {
                 Button(action: closeAction) {
                     Text("Collect")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: UIScreen.main.bounds.width * 0.8)  // 화면의 80% 너비로 조정
                         .padding()
-                        .background(Color(UIColor(hex: "#F8483B")))
+                        .background(Color(AppColors.mainColor))
                         .cornerRadius(10)
                         .padding(.horizontal, 40)
                 }

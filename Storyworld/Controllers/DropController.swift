@@ -31,6 +31,7 @@ final class DropController: UIViewController {
     private var selectedVideo: Video?
     private let circleData: MapCircleService.CircleData // 🔥 CircleData를 저장
     private let mapView: MapView
+    private var isFetchCompleted = false // 🔥 Fetch 완료 여부 추적 변수 추가
     
     init(circleData: MapCircleService.CircleData, mapView: MapView) {
         self.circleData = circleData
@@ -127,9 +128,9 @@ final class DropController: UIViewController {
         
         // Open Drop Button 설정
         openDropButton.setTitle("Open drop", for: .normal)
-        openDropButton.setTitleColor(.white, for: .normal)
+        openDropButton.setTitleColor(.black, for: .normal)
         openDropButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
-        openDropButton.backgroundColor = UIColor(hex:"F8483B")
+        openDropButton.backgroundColor = AppColors.mainColor
         openDropButton.layer.cornerRadius = 10
         openDropButton.addTarget(self, action: #selector(handleDrop), for: .touchUpInside)
         openDropButton.translatesAutoresizingMaskIntoConstraints = false
@@ -268,6 +269,8 @@ final class DropController: UIViewController {
         
         CollectionService.shared.fetchRandomVideoByGenre(genre: circleData.genre) { result in
             DispatchQueue.main.async {
+                self.isFetchCompleted = true // 🔥 Fetch 완료 시 플래그 변경
+                
                 switch result {
                 case .success(let video):
                     self.selectedVideo = video
@@ -294,15 +297,7 @@ final class DropController: UIViewController {
             print("🎥 Image animation completed, waiting for video fetch...")
         }
     }
-    
-    private func resetDropView() {
-        print("⚠️ Resetting Drop View due to error.")
-        dropView.playButton.isUserInteractionEnabled = true
-        openDropButton.isUserInteractionEnabled = true
-        let playImage = UIImage(systemName: "play.fill")
-        dropView.playButton.setImage(playImage, for: .normal)
-    }
-    
+
     private var imageIndex = 0
     private var timer: Timer?
 
@@ -310,48 +305,44 @@ final class DropController: UIViewController {
         let imageCount = 11
         let images = (1...imageCount).map { "image\($0)" }
         let interval: TimeInterval = 0.1
-        var elapsedTime: TimeInterval = 0 // 경과 시간 추적
-
         let animationStartTime = Date()
-        var animationShouldStop = false // 애니메이션 종료 플래그
 
         imageIndex = Int.random(in: 1...10)
         
-        // 타이머로 애니메이션 반복
+        // 타이머 시작
         self.timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] timer in
             guard let self = self else { return }
             
-            // 이미지 순환 업데이트
+            // 이미지 변경
             self.dropView.dropImageView.image = UIImage(named: images[self.imageIndex])
-            
+
             // 햅틱 피드백
             let generator = UIImpactFeedbackGenerator(style: .heavy)
             generator.prepare()
             generator.impactOccurred()
-            
+
             self.imageIndex += 1
             if self.imageIndex >= images.count {
                 self.imageIndex = 0
             }
-            
-            // 경과 시간 업데이트
-            elapsedTime = Date().timeIntervalSince(animationStartTime)
-            
-            // 애니메이션 종료 조건
-            if elapsedTime >= 10.0 || animationShouldStop {
-                timer.invalidate() // 타이머 중지
-                self.timer = nil
-                completion() // 종료 시 콜백 실행
-            }
         }
         
-        // 3초 이후 fetch 완료 여부 확인
-        DispatchQueue.global().asyncAfter(deadline: .now() + 3.0) { [weak self] in
+        // **fetch & 3초 조건을 모두 만족하면 타이머 종료**
+        DispatchQueue.global().async { [weak self] in
             guard let self = self else { return }
-            
-            // fetch가 완료되면 애니메이션 종료 플래그 설정
+
+            // 🔥 fetch 완료될 때까지 기다림
+            while !self.isFetchCompleted { usleep(100_000) } // 0.1초 대기
+
+            // **최소 3초는 보장 후 종료**
+            let remainingTime = max(3.0 - Date().timeIntervalSince(animationStartTime), 0)
+            usleep(useconds_t(remainingTime * 1_000_000)) // 남은 시간만큼 대기
+
+            // 타이머 중지 & 애니메이션 종료
             DispatchQueue.main.async {
-                animationShouldStop = true
+                self.timer?.invalidate()
+                self.timer = nil
+                completion() // 애니메이션 종료 후 callback 실행 (영상 표시)
             }
         }
     }
@@ -366,6 +357,15 @@ final class DropController: UIViewController {
             self.dismiss(animated: true, completion: nil)
         }
     }
+    
+    private func resetDropView() {
+        print("⚠️ Resetting Drop View due to error.")
+        dropView.playButton.isUserInteractionEnabled = true
+        openDropButton.isUserInteractionEnabled = true
+        let playImage = UIImage(systemName: "play.fill")
+        dropView.playButton.setImage(playImage, for: .normal)
+    }
+    
 }
 
 

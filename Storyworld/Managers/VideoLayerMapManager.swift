@@ -16,6 +16,7 @@ final class VideoLayerMapManager {
     
     init(mapView: MapView) {
         self.mapView = mapView
+        startCooldownUpdate() // ✅ 초기화 시 타이머 시작
     }
     
     func addGenreCircles(data: [MapCircleService.CircleData], userLocation: CLLocationCoordinate2D, isScan: Bool = false) {
@@ -139,7 +140,7 @@ final class VideoLayerMapManager {
                 // Symbol Layer 설정
                 var symbolLayer = SymbolLayer(id: symbolLayerId, source: sourceId)
                 symbolLayer.iconImage = .constant(.name(assetImageName)) // Asset 이미지 사용
-                symbolLayer.iconSize = .constant(0.5) // 아이콘 크기 조정
+                symbolLayer.iconSize = .constant(0.6) // 아이콘 크기 조정
                 symbolLayer.iconAnchor = .constant(.center) // 아이콘 위치
                 symbolLayer.iconAllowOverlap = .constant(true) // 중첩 허용
                 symbolLayer.iconIgnorePlacement = .constant(true) // 배치 무시
@@ -189,8 +190,6 @@ final class VideoLayerMapManager {
         }
     }
     
-    
-    
     private func registerIconImage(iconName: String, image: UIImage) {
         do {
             try mapView.mapboxMap.addImage(image, id: iconName)
@@ -198,6 +197,24 @@ final class VideoLayerMapManager {
             print("❌ 아이콘 이미지를 등록하는 데 실패했습니다: \(error.localizedDescription)")
         }
     }
+    
+    func startCooldownUpdate() {
+        updateTimer?.invalidate() // 기존 타이머 제거
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 600.0, repeats: true) { [weak self] _ in
+            self?.refreshAllTiles()
+        }
+    }
+    
+    // ✅ 현재 보이는 모든 타일을 업데이트
+    func refreshAllTiles() {
+        let visibleTiles = tileService.getAllVisibleTiles() // 🔥 현재 보이는 타일 가져오기
+        for tile in visibleTiles {
+            for circle in tile.layerData {
+                self.updateVideoCircleLayer(for: circle) // 🔥 쿨다운 적용한 circle 업데이트
+            }
+        }
+    }
+    
     
     func removeAllVideoLayers() {
         do {

@@ -173,7 +173,7 @@ final class ScanManager {
         isZooming = true
         print("🔍 줌 시작: \(zoomLevel) 레벨로 이동 중...")
         
-        mapView.camera.ease(to: CameraOptions(zoom: zoomLevel), duration: 0.2, curve: .easeInOut) { [weak self] position in
+        mapView.camera.ease(to: CameraOptions(zoom: zoomLevel), duration: 0.3, curve: .easeInOut) { [weak self] position in
             guard let self = self else { return }
             
             if position == .end {

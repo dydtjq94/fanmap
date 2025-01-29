@@ -192,9 +192,9 @@ final class DropResultViewManager {
         
         // Open Drop Button 설정
         closeButton.setTitle("Collect", for: .normal)
-        closeButton.setTitleColor(.white, for: .normal)
+        closeButton.setTitleColor(.black, for: .normal)
         closeButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
-        closeButton.backgroundColor = UIColor(hex:"F8483B")
+        closeButton.backgroundColor = AppColors.mainColor
         closeButton.layer.cornerRadius = 10
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         closeButton.translatesAutoresizingMaskIntoConstraints = false

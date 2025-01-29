@@ -119,7 +119,7 @@ struct DropWithCoinView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(Color.red)
+                .background(Color(AppColors.mainColor))
                 .cornerRadius(10)
             }
             .frame(maxWidth: UIScreen.main.bounds.width * 0.8)  // 화면의 80% 너비로 조정
