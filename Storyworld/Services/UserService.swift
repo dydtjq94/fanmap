@@ -31,7 +31,7 @@ class UserService: ObservableObject {
             profileImageURL: nil,
             bio: "소개글을 작성하세요",
             experience: 0,
-            balance: 100000,
+            balance: 1000000,
             gems: 0,
             collectedVideos: [],
             playlists: []
@@ -126,6 +126,9 @@ class UserService: ObservableObject {
 
         if user.balance >= amount {
             user.balance -= amount
+            if user.balance < 0 { // ✅ 잔액이 음수가 되지 않도록 보장
+                user.balance = 0
+            }
             return true
         } else {
             print("❌ 잔액 부족. 현재 잔액: \(user.balance)")

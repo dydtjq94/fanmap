@@ -30,9 +30,7 @@ struct PlaylistView: View {
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(Color(UIColor(hex: "#8F8E94")))
                 }.simultaneousGesture(TapGesture().onEnded {
-                    let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
-                    feedbackGenerator.prepare()
-                    feedbackGenerator.impactOccurred()
+                    UIImpactFeedbackGenerator.trigger(.light)
                 })
             }
             .padding(.horizontal, 16)
@@ -50,9 +48,7 @@ struct PlaylistView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(viewModel.playlists.prefix(10), id: \.id) { playlist in
                         Button(action: {
-                            let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
-                            feedbackGenerator.prepare()
-                            feedbackGenerator.impactOccurred()
+                            UIImpactFeedbackGenerator.trigger(.light)
                             sheetManager.presentPlaylistDetail(for: playlist)
                         }) {
                             PlaylistItemView(playlist: playlist)

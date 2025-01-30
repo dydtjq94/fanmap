@@ -39,9 +39,7 @@ struct UserProfileView: View {
                 VStack(alignment: .leading) {
                     // 닉네임 수정 버튼
                     Button(action: {
-                        let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
-                        feedbackGenerator.prepare()
-                        feedbackGenerator.impactOccurred()
+                        UIImpactFeedbackGenerator.trigger(.light)
                         editedNickname = userService.user?.nickname ?? "Guest"
                         isEditingNickname = true
                     }) {
@@ -100,9 +98,7 @@ struct UserProfileView: View {
                     
                     // 소개글 수정 버튼
                     Button(action: {
-                        let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
-                        feedbackGenerator.prepare()
-                        feedbackGenerator.impactOccurred()
+                        UIImpactFeedbackGenerator.trigger(.light)
                         editedBio = userService.user?.bio ?? "소개글을 입력하세요"
                         isEditingBio = true
                     }) {

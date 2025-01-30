@@ -59,9 +59,7 @@ struct PlaylistVideoItemView: View {
             }
         }
         .onTapGesture {
-            let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
-            feedbackGenerator.prepare()
-            feedbackGenerator.impactOccurred()
+            UIImpactFeedbackGenerator.trigger(.light)
             
             showingDetail = true
         }

@@ -18,9 +18,7 @@ final class DropManager {
     }
     
     func showProSubscriptionView(videoGenre: VideoGenre, videoRarity: VideoRarity) {
-        let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
-        feedbackGenerator.prepare()
-        feedbackGenerator.impactOccurred()
+        UIImpactFeedbackGenerator.trigger(.heavy)
         
         print("🔒 PRO 구독이 필요합니다.")
         
@@ -36,9 +34,7 @@ final class DropManager {
     }
     
     func showDropWithCoinView(circleData: MapCircleService.CircleData) {
-        let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
-        feedbackGenerator.prepare()
-        feedbackGenerator.impactOccurred()
+        UIImpactFeedbackGenerator.trigger(.heavy)
         
         // 최상위 ViewController 찾기
         if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -71,9 +67,7 @@ final class DropManager {
         } else {
             // 쿨다운이 끝났으면 DropController를 보여줌
             print("✅ 쿨다운 종료 - 드롭 가능")
-            let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
-            feedbackGenerator.prepare()
-            feedbackGenerator.impactOccurred()
+            UIImpactFeedbackGenerator.trigger(.heavy)
             presentDropController(circleData: circleData)
         }
     }

@@ -271,10 +271,11 @@ final class DropResultViewManager {
         ])
     }
     
-    // 닫기 버튼 액션 처리
+    // 수집하기 버튼 액션 처리
     @objc private static func closeTapped(sender: UIButton) {
         if let action = objc_getAssociatedObject(sender, AssociatedKeys.actionClosure) as? () -> Void {
             action()
+            UIImpactFeedbackGenerator.trigger(.heavy)
         }
     }
     

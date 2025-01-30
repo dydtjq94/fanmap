@@ -44,9 +44,7 @@ class PlaylistService {
         var playlists = loadPlaylists()
         if let index = playlists.firstIndex(where: { $0.id == playlist.id }) {
             playlists[index].videoIds.removeAll { $0 == video.video.videoId }
-            let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
-            feedbackGenerator.prepare()
-            feedbackGenerator.impactOccurred()
+            UIImpactFeedbackGenerator.trigger(.heavy)
             savePlaylists(playlists)
 
             DispatchQueue.main.async {
@@ -59,9 +57,7 @@ class PlaylistService {
         var playlists = loadPlaylists()
         if let index = playlists.firstIndex(where: { $0.id == playlist.id }) {
             playlists[index].videoIds.append(video.video.videoId)
-            let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
-            feedbackGenerator.prepare()
-            feedbackGenerator.impactOccurred()
+            UIImpactFeedbackGenerator.trigger(.heavy)
             savePlaylists(playlists)
             
             print("✅ 저장 후 새 Playlist 상태: \(playlists[index].videoIds)")

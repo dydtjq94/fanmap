@@ -30,9 +30,7 @@ struct CollectionView: View {
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(Color(UIColor(hex: "#8F8E94")))
                 }.simultaneousGesture(TapGesture().onEnded {
-                    let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
-                    feedbackGenerator.prepare()
-                    feedbackGenerator.impactOccurred()
+                    UIImpactFeedbackGenerator.trigger(.light)
                 })
             }
             .padding(.horizontal, 16)

@@ -67,13 +67,13 @@ final class MapCircleService {
         static func getPrice(for rarity: VideoRarity) -> Int {
             switch rarity {
             case .silver:
-                return 100
+                return Int.random(in: 50...150)
             case .gold:
-                return 1000
+                return Int.random(in: 250...350)
             case .diamond:
-                return 10000
+                return Int.random(in: 1000...2000)
             case .ruby:
-                return 50000
+                return Int.random(in: 50000...100000)
             }
         }
         

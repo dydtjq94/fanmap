@@ -14,11 +14,9 @@ struct SplashScreenView: View {
     var body: some View {
         ZStack {
             Color(AppColors.mainBgColor).ignoresSafeArea()
-
-            
                 Image("logo")
                     .resizable()
-                    .frame(width: 240, height: 240)
+                    .frame(width: 160, height: 160)
                     .foregroundColor(.white)
                     .scaleEffect(scaleEffect)
                     .opacity(1.0)

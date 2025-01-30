@@ -7,6 +7,7 @@
 
 import UIKit
 import MapboxMaps
+import SwiftUI
 
 final class DropController: UIViewController {
     private let dismissButton = UIButton(type: .system) // 화살표 버튼
@@ -202,10 +203,8 @@ final class DropController: UIViewController {
             // dropImageView를 오른쪽 상단으로 3px 이동
             self.dropView.dropImageView.transform = CGAffineTransform(translationX: 5, y: -3)
         }, completion: { _ in
-            // 애니메이션 완료 시 햅틱 피드백 실행
-            let generator = UIImpactFeedbackGenerator(style: .heavy)
-            generator.prepare()  // 미리 준비 (더 부드러운 피드백 제공)
-            generator.impactOccurred()
+
+            UIImpactFeedbackGenerator.trigger(.heavy)
         })
     }
     
@@ -219,10 +218,7 @@ final class DropController: UIViewController {
             
             self.dropView.dropImageView.transform = CGAffineTransform(translationX: 0, y: 0)
         }, completion: { _ in
-            // 애니메이션 완료 시 햅틱 피드백 실행
-            let generator = UIImpactFeedbackGenerator(style: .heavy)
-            generator.prepare()  // 미리 준비 (더 부드러운 피드백 제공)
-            generator.impactOccurred()
+            UIImpactFeedbackGenerator.trigger(.heavy)
         })
     }
     
@@ -239,9 +235,10 @@ final class DropController: UIViewController {
         dropView.playButton.isUserInteractionEnabled = false
         openDropButton.isUserInteractionEnabled = false
 
+        startImageAnimation()
+        
         // 애니메이션과 비디오 fetch 동시에 시작
         let animationStartTime = Date()
-        startImageAnimation()
         
         fetchVideosAndAnimate { video in
             let elapsedTime = Date().timeIntervalSince(animationStartTime)
@@ -257,7 +254,7 @@ final class DropController: UIViewController {
             }
         }
     }
-
+    
     private func fetchVideosAndAnimate(completion: @escaping (Video?) -> Void) {
         // 🔥 타일 데이터 업데이트
         TileService().updateLastDropTime(for: circleData)
@@ -304,7 +301,7 @@ final class DropController: UIViewController {
     private func animateImageSequence(completion: @escaping () -> Void) {
         let imageCount = 11
         let images = (1...imageCount).map { "image\($0)" }
-        let interval: TimeInterval = 0.05
+        let interval: TimeInterval = 0.1
         let animationStartTime = Date()
 
         imageIndex = Int.random(in: 1...10)
@@ -317,9 +314,7 @@ final class DropController: UIViewController {
             self.dropView.dropImageView.image = UIImage(named: images[self.imageIndex])
 
             // 햅틱 피드백
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.prepare()
-            generator.impactOccurred()
+            UIImpactFeedbackGenerator.trigger(.light)
 
             self.imageIndex += 1
             if self.imageIndex >= images.count {
@@ -348,14 +343,50 @@ final class DropController: UIViewController {
     }
     
     private func showDropResult(with video: Video) {
-        DropResultViewManager.createDropResultView(
-            in: self.view,
-            video: video,
-            genre: circleData.genre,
-            rarity: circleData.rarity
-        ) {
-            self.dismiss(animated: true, completion: nil)
-        }
+        // 기존에 있는 모든 서브뷰 제거
+        self.view.subviews.forEach { $0.removeFromSuperview() }
+        
+        // SwiftUI 뷰를 HostingController로 감싸기
+        let hostingController = UIHostingController(
+            rootView: DropResultWithCoinView(
+                video: video
+            ) {
+                self.dismiss(animated: true, completion: nil) // 닫기 액션
+            }
+        )
+
+        // 배경 투명하게 설정
+        hostingController.view.backgroundColor = UIColor.clear
+
+        // 새로운 SwiftUI 뷰 추가
+        self.addChild(hostingController)
+        self.view.addSubview(hostingController.view)
+        hostingController.didMove(toParent: self)
+
+        // Auto Layout 설정
+        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            hostingController.view.topAnchor.constraint(equalTo: self.view.topAnchor),
+            hostingController.view.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+            hostingController.view.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+            hostingController.view.bottomAnchor.constraint(equalTo: self.view.bottomAnchor)
+        ])
+        
+        // 등장 애니메이션 적용
+        hostingController.view.alpha = 0
+        hostingController.view.transform = CGAffineTransform(translationX: 0, y: 30)
+        
+        UIView.animate(
+            withDuration: 0.4,
+            delay: 0.1,
+            usingSpringWithDamping: 0.7,
+            initialSpringVelocity: 0.5,
+            options: [.curveEaseOut],
+            animations: {
+                hostingController.view.alpha = 1
+                hostingController.view.transform = .identity
+            }
+        )
     }
     
     private func resetDropView() {

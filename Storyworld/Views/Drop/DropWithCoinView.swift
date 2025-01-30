@@ -13,9 +13,13 @@ struct DropWithCoinView: View {
     @State private var playIcon: String = "play.fill"
     @State private var randomImageNumber: Int = Int.random(in: 1...10)
     @State private var isAnimating: Bool = false
+    @State private var isButtonDisabled: Bool = false
     @State private var timer: Timer?
     @State private var selectedVideo: Video?
     @State private var showDropResultView = false
+    
+    @State private var isFetchCompleted = false
+    
     @State private var blurOffset: CGSize = .zero
     @State private var imageOffset: CGSize = .zero
     @State private var dropPrice: Int  // 가격 상태 변수 추가
@@ -23,11 +27,11 @@ struct DropWithCoinView: View {
     @State private var cooldownTimer: Timer?
     
     let circleData: MapCircleService.CircleData
-  
     
     init(circleData: MapCircleService.CircleData) {
         self.circleData = circleData
-        self._dropPrice = State(initialValue: UserStatusManager.shared.getCoinDeduct(for: circleData.rarity))
+        self.dropPrice = circleData.basePrice
+        print("\(circleData.basePrice)")
     }
     
     var body: some View {
@@ -48,7 +52,10 @@ struct DropWithCoinView: View {
                     }
                 }
                 .onTapGesture {
-                    presentationMode.wrappedValue.dismiss()
+                    if !isButtonDisabled { // ✅ 버튼이 이미 눌린 상태면 동작 안 함
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    
                 }
             
             VStack(spacing: 20) {
@@ -100,24 +107,30 @@ struct DropWithCoinView: View {
                 
                 // 닫기 버튼
                 Button(action: {
-                    if !isAnimating {
-                        startImageAnimation()
+                    if !isButtonDisabled { // ✅ 버튼이 이미 눌린 상태면 동작 안 함
+                        isButtonDisabled = true // ✅ 버튼 비활성화
+                        attemptToDropVideo()
                     }
                 }) {
-                    Text("지금 바로 열기 ")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black) +
-                    Text(Image(systemName: "dollarsign.circle.fill"))
-                        .font(.system(size: 16))
-                        .foregroundColor(.yellow) +
-                    Text(" \(dropPrice)")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black)
+                    HStack(spacing: 5) { // ✅ 아이콘과 텍스트를 가로로 정렬
+                        Text("지금 바로 열기 ")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.black)
+                        
+                        Image(systemName: "dollarsign.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.yellow)
+                        
+                        Text(" \(dropPrice)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.black)
+                    }
+                    .frame(maxWidth: .infinity) // ✅ 텍스트를 가득 차게 확장
+                    .padding(.vertical, 12)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
                 .background(Color(AppColors.mainColor))
                 .cornerRadius(10)
+                .contentShape(Rectangle()) // ✅ 버튼 영역을 전체 확장
             }
             .frame(maxWidth: UIScreen.main.bounds.width * 0.8)  // 화면의 80% 너비로 조정
             .padding(20)
@@ -132,11 +145,8 @@ struct DropWithCoinView: View {
             if let video = selectedVideo {
                 DropResultWithCoinView(
                     video: video,
-                    genre: circleData.genre,
-                    rarity: circleData.rarity,
                     closeAction: {
                         showDropResultView = false
-                        presentationMode.wrappedValue.dismiss()
                     }
                 )
             }
@@ -173,102 +183,141 @@ struct DropWithCoinView: View {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            let generator = UIImpactFeedbackGenerator(style: .heavy)
-            generator.prepare()
-            generator.impactOccurred()
+            UIImpactFeedbackGenerator.trigger(.heavy)
         }
     }
     
-    private func startImageAnimation() {
+    
+    
+    // ✅ 버튼 클릭 시 코인 확인 후 애니메이션 실행
+    private func attemptToDropVideo() {
+        UIImpactFeedbackGenerator.trigger(.light)
         playIcon = "pause.fill"
         isAnimating = true
-        
-        // 1. 위치 복귀 후 애니메이션 시작
         withAnimation(.easeInOut(duration: 0.3)) {
             blurOffset = .zero
             imageOffset = .zero
         }
-        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            fetchVideosAndAnimate()
-        }
+            let success = UserService.shared.deductCoins(amount: dropPrice)
+            if success {
+                isButtonDisabled = true // 버튼 비활성화
+                startImageAnimation()
+            } else {
+                print("❌ 코인 부족으로 영상 열기 실패")
+                playIcon = "play.fill"
+                startDropViewAnimation()
+                isAnimating = false
+                isButtonDisabled = false
+            }}
     }
     
-    let totalDuration: TimeInterval = 3
-    let interval: TimeInterval = 0.05
-    let imageCount = 11
-    
-    private func startImageSequenceAnimation() {
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.prepare()
-            generator.impactOccurred()
-            
-            randomImageNumber += 1
-            if randomImageNumber > imageCount {
-                randomImageNumber = 1
-            }
-        }
+    // ✅ 애니메이션 최소 3초 유지 & fetch 이후 drop 결과 보여주기
+    private func startImageAnimation() {
+        startImageSequenceAnimation()
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + totalDuration) {
-            timer?.invalidate()
-            timer = nil
-            isAnimating = false
-            showDropResult()
-        }
-    }
-    
-    private func fetchVideosAndAnimate() {
-        CollectionService.shared.fetchUncollectedVideos(for: circleData.genre, rarity: circleData.rarity) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let filteredVideos):
-                    guard let video = filteredVideos.randomElement() else {
-                        print("⚠️ No videos available")
-                        return
-                    }
-                    
-                    // 코인 차감 시도
-                    let success = UserService.shared.deductCoins(amount: dropPrice)
-                    if success {
-                        self.selectedVideo = video
-                        CollectionService.shared.saveCollectedVideoWithoutReward(video, amount: dropPrice)
-                        startImageSequenceAnimation()
-                    } else {
-                        print("❌ 코인 부족으로 영상 열기 실패")
-                        playIcon = "play.fill"
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            blurOffset = CGSize(width: -5, height: 3)
-                            imageOffset = CGSize(width: 5, height: -3)
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            let generator = UIImpactFeedbackGenerator(style: .heavy)
-                            generator.prepare()
-                            generator.impactOccurred()
-                        }
-                        isAnimating = false
-                    }
-                    
-                case .failure(let error):
-                    print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
-                    playIcon = "play.fill"
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        blurOffset = CGSize(width: -5, height: 3)
-                        imageOffset = CGSize(width: 5, height: -3)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        let generator = UIImpactFeedbackGenerator(style: .heavy)
-                        generator.prepare()
-                        generator.impactOccurred()
-                    }
-                    isAnimating = false
+        let animationStartTime = Date() // ✅ 시작 시간 기록
+        
+        fetchVideosAndAnimate { video in
+            let elapsedTime = Date().timeIntervalSince(animationStartTime)
+            let remainingTime = max(3.0 - elapsedTime, 0) // ✅ 최소 3초 보장
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + remainingTime) {
+                if let video = video {
+                    self.selectedVideo = video
+                    self.showDropResult()
+                } else {
+                    print("⚠️ No video available.")
                 }
             }
         }
     }
     
+    // ✅ 랜덤 이미지 애니메이션 실행
+    private func startImageSequenceAnimation() {
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            randomImageNumber = (randomImageNumber % 11) + 1
+            // 햅틱 피드백
+            UIImpactFeedbackGenerator.trigger(.light)
+        }
+    }
+    
+    // ✅ fetch 완료될 때까지 이미지 애니메이션 유지
+    private func fetchVideosAndAnimate(completion: @escaping (Video?) -> Void) {
+        CollectionService.shared.fetchRandomVideoByGenre(genre: circleData.genre) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let video):
+                    self.selectedVideo = video
+                    CollectionService.shared.saveCollectedVideoWithoutReward(video, amount: dropPrice)
+                    completion(video)
+                case .failure(let error):
+                    print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
+                    completion(nil)
+                }
+            }
+        }
+    }
+    
+    // ✅ Drop Result View 표시
     private func showDropResult() {
-        print("🎉 Drop Result Shown")
+        timer?.invalidate()
+        timer = nil
+        playIcon = "play.fill"
+        startDropViewAnimation()
+        isButtonDisabled = false
+        isAnimating = false
         showDropResultView = true
     }
+    
 }
+
+
+//    private func fetchVideosAndAnimate() {
+//        CollectionService.shared.fetchUncollectedVideos(for: circleData.genre, rarity: circleData.rarity) { result in
+//            DispatchQueue.main.async {
+//                switch result {
+//                case .success(let filteredVideos):
+//                    guard let video = filteredVideos.randomElement() else {
+//                        print("⚠️ No videos available")
+//                        return
+//                    }
+//
+//                    // 코인 차감 시도
+//                    let success = UserService.shared.deductCoins(amount: dropPrice)
+//                    if success {
+//                        self.selectedVideo = video
+//                        CollectionService.shared.saveCollectedVideoWithoutReward(video, amount: dropPrice)
+//                        startImageSequenceAnimation()
+//                    } else {
+//                        print("❌ 코인 부족으로 영상 열기 실패")
+//                        playIcon = "play.fill"
+//                        withAnimation(.easeInOut(duration: 0.3)) {
+//                            blurOffset = CGSize(width: -5, height: 3)
+//                            imageOffset = CGSize(width: 5, height: -3)
+//                        }
+//                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+//                            let generator = UIImpactFeedbackGenerator(style: .heavy)
+//                            generator.prepare()
+//                            generator.impactOccurred()
+//                        }
+//                        isAnimating = false
+//                    }
+//
+//                case .failure(let error):
+//                    print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
+//                    playIcon = "play.fill"
+//                    withAnimation(.easeInOut(duration: 0.3)) {
+//                        blurOffset = CGSize(width: -5, height: 3)
+//                        imageOffset = CGSize(width: 5, height: -3)
+//                    }
+//                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+//                        let generator = UIImpactFeedbackGenerator(style: .heavy)
+//                        generator.prepare()
+//                        generator.impactOccurred()
+//                    }
+//                    isAnimating = false
+//                }
+//            }
+//        }
+//    }

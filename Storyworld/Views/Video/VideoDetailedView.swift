@@ -50,10 +50,26 @@ struct VideoDetailedView: View {
                             .font(.headline)
                             .foregroundColor(Color.gray)
                         
-                        HStack(spacing: 12) {
-                            RarityBadgeView(rarity: rarity)
-                            GenreBadgeView(genre: genre)
+                        HStack{
+                            HStack(spacing: 12) {
+                                RarityBadgeView(rarity: rarity)
+                                GenreBadgeView(genre: genre)
+                            }
+                            Spacer()
+                            Button(action: {
+                                if let url = URL(string: "https://www.youtube.com/watch?v=\(video.videoId)") {
+                                    UIApplication.shared.open(url)
+                                    UIImpactFeedbackGenerator.trigger(.light)
+                                }
+                            }) {
+                                Image("youtube-logo") // ▶️ 아이콘 변경 (재생 버튼 느낌)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 60)
+                            }
+                            .buttonStyle(PlainButtonStyle()) // ✅ 버튼 스타일 기본으로 설정
                         }
+                        .padding(.top, 16)
                     }
                     .frame(width: 330, alignment: .leading)
                 }

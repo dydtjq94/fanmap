@@ -42,9 +42,7 @@ struct ContentView: View {
         
         .onChange(of: selectedTab) {
             DispatchQueue.main.async {
-                let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
-                feedbackGenerator.prepare()
-                feedbackGenerator.impactOccurred()
+                UIImpactFeedbackGenerator.trigger(.light)
             }
         }
     }

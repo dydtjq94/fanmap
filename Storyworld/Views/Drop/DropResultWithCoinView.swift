@@ -10,8 +10,6 @@ import SwiftUI
 
 struct DropResultWithCoinView: View {
     let video: Video
-    let genre: VideoGenre
-    let rarity: VideoRarity
     let closeAction: () -> Void
     
     var body: some View {
@@ -46,24 +44,43 @@ struct DropResultWithCoinView: View {
                             .multilineTextAlignment(.leading)
                             .lineLimit(2)
                         
+                        
                         Text(Channel.getChannelName(by: video.channelId))
                             .font(.headline)
                             .foregroundColor(Color.gray)
-                        
-                        HStack(spacing: 12) {
-                            RarityBadgeView(rarity: rarity)
-                            GenreBadgeView(genre: genre)
+                        HStack{
+                            HStack(spacing: 12) {
+                                RarityBadgeView(rarity: video.rarity)
+                                GenreBadgeView(genre: video.genre)
+                            }
+                            Spacer()
+                            Button(action: {
+                                if let url = URL(string: "https://www.youtube.com/watch?v=\(video.videoId)") {
+                                    UIApplication.shared.open(url)
+                                    UIImpactFeedbackGenerator.trigger(.light)
+                                }
+                            }) {
+                                Image("youtube-logo") // ▶️ 아이콘 변경 (재생 버튼 느낌)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 60)
+                            }
+                            .buttonStyle(PlainButtonStyle()) // ✅ 버튼 스타일 기본으로 설정
                         }
+                        .padding(.top, 16)
                     }
                     .frame(width: 330, alignment: .leading)
                 }
                 .padding()
-                .background(Color(rarity.dropBackgroundColor))
+                .background(Color(video.rarity.dropBackgroundColor))
                 .cornerRadius(20)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 Spacer()
                 // Collect 버튼
-                Button(action: closeAction) {
+                Button(action: {
+                    closeAction()
+                    UIImpactFeedbackGenerator.trigger(.heavy)
+                }) {
                     Text("수집하기")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.black)
@@ -77,7 +94,6 @@ struct DropResultWithCoinView: View {
         }
         .onAppear {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.7)) {
-                // 애니메이션 효과
             }
         }
     }
