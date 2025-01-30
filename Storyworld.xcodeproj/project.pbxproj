@@ -483,6 +483,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Storyworld/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "침착맵";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "need your location";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "need your location";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "need your location";
@@ -517,6 +518,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Storyworld/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "침착맵";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "need your location";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "need your location";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "need your location";

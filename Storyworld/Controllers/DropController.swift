@@ -127,7 +127,7 @@ final class DropController: UIViewController {
         view.addSubview(infoStackView)
         
         // Open Drop Button 설정
-        openDropButton.setTitle("Open drop", for: .normal)
+        openDropButton.setTitle("영상 소환", for: .normal)
         openDropButton.setTitleColor(.black, for: .normal)
         openDropButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
         openDropButton.backgroundColor = AppColors.mainColor
@@ -304,7 +304,7 @@ final class DropController: UIViewController {
     private func animateImageSequence(completion: @escaping () -> Void) {
         let imageCount = 11
         let images = (1...imageCount).map { "image\($0)" }
-        let interval: TimeInterval = 0.1
+        let interval: TimeInterval = 0.05
         let animationStartTime = Date()
 
         imageIndex = Int.random(in: 1...10)
@@ -317,7 +317,7 @@ final class DropController: UIViewController {
             self.dropView.dropImageView.image = UIImage(named: images[self.imageIndex])
 
             // 햅틱 피드백
-            let generator = UIImpactFeedbackGenerator(style: .heavy)
+            let generator = UIImpactFeedbackGenerator(style: .light)
             generator.prepare()
             generator.impactOccurred()
 

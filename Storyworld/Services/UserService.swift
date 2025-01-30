@@ -41,14 +41,6 @@ class UserService: ObservableObject {
             self.user = newUser
         }
     }
-
-    
-    func updateNickname(_ newNickname: String) {
-        guard var user = user else { return }
-        user.nickname = newNickname
-        saveUser(user)
-    }
-
     
     private func loadUser() -> User? {
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {

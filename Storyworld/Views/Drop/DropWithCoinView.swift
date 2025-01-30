@@ -23,10 +23,7 @@ struct DropWithCoinView: View {
     @State private var cooldownTimer: Timer?
     
     let circleData: MapCircleService.CircleData
-    
-    let totalDuration: TimeInterval = 3
-    let interval: TimeInterval = 0.1
-    let imageCount = 11
+  
     
     init(circleData: MapCircleService.CircleData) {
         self.circleData = circleData
@@ -197,9 +194,13 @@ struct DropWithCoinView: View {
         }
     }
     
+    let totalDuration: TimeInterval = 3
+    let interval: TimeInterval = 0.05
+    let imageCount = 11
+    
     private func startImageSequenceAnimation() {
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            let generator = UIImpactFeedbackGenerator(style: .heavy)
+            let generator = UIImpactFeedbackGenerator(style: .light)
             generator.prepare()
             generator.impactOccurred()
             

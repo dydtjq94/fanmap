@@ -13,32 +13,15 @@ struct SplashScreenView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color(AppColors.mainBgColor).ignoresSafeArea()
 
-            VStack {
-                Image(systemName: "play.circle.fill")
+            
+                Image("logo")
                     .resizable()
-                    .frame(width: 120, height: 120)
+                    .frame(width: 240, height: 240)
                     .foregroundColor(.white)
                     .scaleEffect(scaleEffect)
-                    .opacity(opacity)
-                    .animation(.easeInOut(duration: 1.5), value: opacity)
-
-                Spacer().frame(height: 20)
-
-                Text("Storyworld")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .opacity(opacity)
-                    .animation(.easeInOut(duration: 1.5), value: opacity)
-            }
-        }
-        .onAppear {
-            withAnimation {
-                opacity = 1.0
-                scaleEffect = 1.2
-            }
+                    .opacity(1.0)
         }
     }
 }
