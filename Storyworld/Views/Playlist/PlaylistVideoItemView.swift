@@ -17,7 +17,7 @@ struct PlaylistVideoItemView: View {
     var body: some View {
         HStack(alignment: .center) {
             // 썸네일 이미지 크기 2/3로 조정
-            AsyncImage(url: URL(string: collectedVideo.video.thumbnailURL)) { image in
+            AsyncImage(url: URL(string: "https://img.youtube.com/vi/\(collectedVideo.video.videoId)/mqdefault.jpg")) { image in
                 image
                     .resizable()
                     .frame(width: 60, height:40)

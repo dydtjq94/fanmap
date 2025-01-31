@@ -60,7 +60,7 @@ struct MapTabUserProfileView: View {
                     }
                     
                     HStack(spacing: 4) {
-                        Image(systemName: "diamond.fill")
+                        Image(systemName: "inset.filled.diamond")
                             .foregroundColor(Color(UIColor(hex:"#00FFFF")))
                             .font(.system(size: 12))
                         Text("\(userService.user?.gems ?? 0)")

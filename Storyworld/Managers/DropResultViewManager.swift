@@ -50,7 +50,7 @@ final class DropResultViewManager {
         thumbnailImageView.translatesAutoresizingMaskIntoConstraints = false
         
         // 부모 뷰에 배경 썸네일 추가
-        if let url = URL(string: video.thumbnailURL) {
+        if let url = URL(string: "https://img.youtube.com/vi/\(video.videoId)/mqdefault.jpg") {
             DispatchQueue.global().async {
                 if let data = try? Data(contentsOf: url), let image = UIImage(data: data) {
                     DispatchQueue.main.async {

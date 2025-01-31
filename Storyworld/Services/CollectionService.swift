@@ -49,7 +49,7 @@ class CollectionService {
         }
     }
     
-    func fetchRandomVideoByGenre(genre: VideoGenre, completion: @escaping (Result<Video, Error>) -> Void) {
+    func fetchRandomVideoByGenre(genre: VideoGenre, rarity: VideoRarity, completion: @escaping (Result<Video, Error>) -> Void) {
         let functionURL = "https://getrandomvideobygenre-bgfikxjrua-uc.a.run.app"
         
         guard let url = URL(string: "\(functionURL)?genre=\(genre.rawValue)") else {
@@ -80,7 +80,12 @@ class CollectionService {
                 formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
                 formatter.timeZone = TimeZone(secondsFromGMT: 0)
                 decoder.dateDecodingStrategy = .formatted(formatter)
-                let video = try decoder.decode(Video.self, from: data)
+                // 서버에서 받아온 원본 Video 객체
+                var video = try decoder.decode(Video.self, from: data)
+                
+                // 🔥 rarity 값 덮어쓰기
+                video.rarity = rarity
+                
                 completion(.success(video))
                 print("🚀 서버에서 가져온 영상: \(video)")
             } catch {

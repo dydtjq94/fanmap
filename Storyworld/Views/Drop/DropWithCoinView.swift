@@ -109,7 +109,7 @@ struct DropWithCoinView: View {
                 // 희귀도 및 장르 뱃지
                 HStack(spacing: 12) {
                     RarityBadgeView(rarity: circleData.rarity)
-                    GenreBadgeView(genre: circleData.genre)
+//                    GenreBadgeView(genre: circleData.genre)
                     CooldownBadgeView(circleData: circleData)
                 }
                 
@@ -252,7 +252,7 @@ struct DropWithCoinView: View {
     
     // ✅ fetch 완료될 때까지 이미지 애니메이션 유지
     private func fetchVideosAndAnimate(completion: @escaping (Video?) -> Void) {
-        CollectionService.shared.fetchRandomVideoByGenre(genre: circleData.genre) { result in
+        CollectionService.shared.fetchRandomVideoByGenre(genre: circleData.genre, rarity: circleData.rarity) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let video):

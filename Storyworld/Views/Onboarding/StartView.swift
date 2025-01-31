@@ -25,11 +25,12 @@ struct StartView: View {
             HStack {
                 Image("logo")
                     .resizable()
-                    .frame(width: 36, height: 36)
+                    .frame(width: 24, height: 24)
                 
-                Text("침착맵")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white.opacity(1.0))
+                Image("logo_korean")
+                    .resizable()
+                    .frame(width: 56, height:28)
+                    .padding(.leading, -6)
             }
             .padding(.top, 24)
             
@@ -68,7 +69,7 @@ struct StartView: View {
                 }
                 
                 // ✅ 하단에 텍스트 추가
-                Text("For 한국인,  By 개청자,  Of 침싸개")
+                Text("Chimchakmap For 한국인  By 개청자")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white.opacity(0.8))
                     .padding(.top, 12)

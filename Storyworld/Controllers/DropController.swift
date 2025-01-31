@@ -93,30 +93,30 @@ final class DropController: UIViewController {
         rarityContainerView.translatesAutoresizingMaskIntoConstraints = false
         rarityContainerView.addSubview(rarityStackView)
         
-        // 장르 SF Symbol 설정
-        genreImageView.image = UIImage(systemName: "play.fill")?.withRenderingMode(.alwaysTemplate)
-        //        genreImageView.image = UIImage(named: "chim")
-        genreImageView.tintColor = circleData.genre.uiColor
-        genreImageView.contentMode = .scaleAspectFit
-        genreImageView.translatesAutoresizingMaskIntoConstraints = false
-        
-        genreLabel.text = circleData.genre.localized()
-        genreLabel.textColor = circleData.genre.uiColor
-        genreLabel.font = UIFont.boldSystemFont(ofSize: 12)
-        
-        // 장르 StackView 구성
-        genreStackView.axis = .horizontal
-        genreStackView.alignment = .center
-        genreStackView.spacing = 6
-        genreStackView.addArrangedSubview(genreImageView)
-        genreStackView.addArrangedSubview(genreLabel)
-        genreStackView.translatesAutoresizingMaskIntoConstraints = false
-        
-        // 장르 컨테이너 뷰 설정 (배경 색 추가)
-        genreContainerView.backgroundColor = circleData.genre.backgroundColor
-        genreContainerView.layer.cornerRadius = 8
-        genreContainerView.translatesAutoresizingMaskIntoConstraints = false
-        genreContainerView.addSubview(genreStackView)
+//        // 장르 SF Symbol 설정
+//        genreImageView.image = UIImage(systemName: "play.fill")?.withRenderingMode(.alwaysTemplate)
+//        //        genreImageView.image = UIImage(named: "chim")
+//        genreImageView.tintColor = circleData.genre.uiColor
+//        genreImageView.contentMode = .scaleAspectFit
+//        genreImageView.translatesAutoresizingMaskIntoConstraints = false
+//        
+//        genreLabel.text = circleData.genre.localized()
+//        genreLabel.textColor = circleData.genre.uiColor
+//        genreLabel.font = UIFont.boldSystemFont(ofSize: 12)
+//        
+//        // 장르 StackView 구성
+//        genreStackView.axis = .horizontal
+//        genreStackView.alignment = .center
+//        genreStackView.spacing = 6
+//        genreStackView.addArrangedSubview(genreImageView)
+//        genreStackView.addArrangedSubview(genreLabel)
+//        genreStackView.translatesAutoresizingMaskIntoConstraints = false
+//        
+//        // 장르 컨테이너 뷰 설정 (배경 색 추가)
+//        genreContainerView.backgroundColor = circleData.genre.backgroundColor
+//        genreContainerView.layer.cornerRadius = 8
+//        genreContainerView.translatesAutoresizingMaskIntoConstraints = false
+//        genreContainerView.addSubview(genreStackView)
         
         // 메인 스택뷰 설정
         infoStackView.axis = .horizontal
@@ -128,7 +128,7 @@ final class DropController: UIViewController {
         view.addSubview(infoStackView)
         
         // Open Drop Button 설정
-        openDropButton.setTitle("영상 드롭 열기", for: .normal)
+        openDropButton.setTitle("영상 열기", for: .normal)
         openDropButton.setTitleColor(.black, for: .normal)
         openDropButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
         openDropButton.backgroundColor = AppColors.mainColor
@@ -139,7 +139,7 @@ final class DropController: UIViewController {
         
         // DropView 추가
         dropView.translatesAutoresizingMaskIntoConstraints = false
-        dropView.backgroundColor = circleData.genre.backgroundColor
+        dropView.backgroundColor = circleData.rarity.dropBackgroundColor
         view.addSubview(dropView)
         
         // Constraints 설정
@@ -158,17 +158,17 @@ final class DropController: UIViewController {
             rarityStackView.heightAnchor.constraint(equalToConstant: 24),
             
             // Genre StackView 크기 조정
-            genreStackView.leadingAnchor.constraint(equalTo: genreContainerView.leadingAnchor, constant: 8),
-            genreStackView.trailingAnchor.constraint(equalTo: genreContainerView.trailingAnchor, constant: -8),
-            genreStackView.topAnchor.constraint(equalTo: genreContainerView.topAnchor, constant: 3),
-            genreStackView.bottomAnchor.constraint(equalTo: genreContainerView.bottomAnchor, constant: -3),
-            genreStackView.heightAnchor.constraint(equalToConstant: 24),
+//            genreStackView.leadingAnchor.constraint(equalTo: genreContainerView.leadingAnchor, constant: 8),
+//            genreStackView.trailingAnchor.constraint(equalTo: genreContainerView.trailingAnchor, constant: -8),
+//            genreStackView.topAnchor.constraint(equalTo: genreContainerView.topAnchor, constant: 3),
+//            genreStackView.bottomAnchor.constraint(equalTo: genreContainerView.bottomAnchor, constant: -3),
+//            genreStackView.heightAnchor.constraint(equalToConstant: 24),
             
             // 희귀도 및 장르 이미지 크기 조정
             rarityImageView.widthAnchor.constraint(equalToConstant: 18),
             rarityImageView.heightAnchor.constraint(equalToConstant: 18),
-            genreImageView.widthAnchor.constraint(equalToConstant: 18),
-            genreImageView.heightAnchor.constraint(equalToConstant: 18),
+//            genreImageView.widthAnchor.constraint(equalToConstant: 18),
+//            genreImageView.heightAnchor.constraint(equalToConstant: 18),
             
             // Main StackView 위치 조정
             infoStackView.bottomAnchor.constraint(equalTo: openDropButton.topAnchor, constant: -24),
@@ -264,7 +264,8 @@ final class DropController: UIViewController {
         VideoLayerMapManager(mapView: mapView).updateVideoCircleLayer(for: circleData)
 
         
-        CollectionService.shared.fetchRandomVideoByGenre(genre: circleData.genre) { result in
+        CollectionService.shared.fetchRandomVideoByGenre(genre: circleData.genre, rarity: circleData.rarity) { result in
+
             DispatchQueue.main.async {
                 self.isFetchCompleted = true // 🔥 Fetch 완료 시 플래그 변경
                 

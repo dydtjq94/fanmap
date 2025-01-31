@@ -31,7 +31,7 @@ class UserService: ObservableObject {
             profileImageURL: nil,
             bio: "소개글을 작성하세요",
             experience: 0,
-            balance: 1000000,
+            balance: 5000,
             gems: 0,
             collectedVideos: [],
             playlists: []

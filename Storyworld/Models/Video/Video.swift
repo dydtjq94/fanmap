@@ -15,7 +15,7 @@ struct Video: Codable, Equatable, Hashable {
     let channelId: String // 채널 ID만 참조
     let publishDate: Date?
     let genre: VideoGenre
-    let rarity: VideoRarity
+    var rarity: VideoRarity
 }
 
 // 사용자가 수집한 영상을 위한 별도 모델

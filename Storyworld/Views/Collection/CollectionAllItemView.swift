@@ -14,7 +14,7 @@ struct CollectionAllItemView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // 썸네일 이미지 크기 조정
-            AsyncImage(url: URL(string: collectedVideo.video.thumbnailURL)) { image in
+            AsyncImage(url: URL(string: "https://img.youtube.com/vi/\(collectedVideo.video.videoId)/mqdefault.jpg")) { image in
                 image
                     .resizable()
                     .frame(width: 72, height: 48)

@@ -82,8 +82,8 @@ final class VideoLayerMapManager {
                     glowLayer.circleRadius = .expression(
                         Exp(.match,
                             Exp(.get, "rarity"),
-                            VideoRarity.gold.rawValue, 30.0,
-                            VideoRarity.diamond.rawValue, 30.0,
+                            VideoRarity.gold.rawValue, 25.0,
+                            VideoRarity.diamond.rawValue, 35.0,
                             VideoRarity.ruby.rawValue, 40.0,
                             0.0 // 기본값
                            )
@@ -92,8 +92,8 @@ final class VideoLayerMapManager {
                         Exp(.match,
                             Exp(.get, "rarity"),
                             VideoRarity.gold.rawValue, 2.0,
-                            VideoRarity.diamond.rawValue, 1.0,
-                            VideoRarity.ruby.rawValue, 1.0,
+                            VideoRarity.diamond.rawValue, 0.9,
+                            VideoRarity.ruby.rawValue, 0.8,
                             0.0 // 기본값
                            )
                     )
@@ -139,29 +139,45 @@ final class VideoLayerMapManager {
 //                )
                 
                 //                 Symbol Layer 설정
-                let assetImageName = "logo_small" // Asset에 등록된 이미지 이름
-                
+                let defaultIcon = "logo_small"          // 기본 아이콘
+                let cooldownIcon = "logo_small_black"   // 쿨다운이 0 이하일 때 아이콘
+
+                // 🟢 1. Mapbox에 이미지 추가 (두 개 모두 등록)
                 try mapView.mapboxMap.addImage(
-                    UIImage(named: assetImageName)!,
-                    id: assetImageName
+                    UIImage(named: defaultIcon)!,
+                    id: defaultIcon
+                )
+                try mapView.mapboxMap.addImage(
+                    UIImage(named: cooldownIcon)!,
+                    id: cooldownIcon
+                )
+
+                // 🟡 2. Symbol Layer 설정
+                var symbolLayer = SymbolLayer(id: symbolLayerId, source: sourceId)
+
+                // 🟠 3. remainingCooldown 값에 따라 아이콘 변경
+                symbolLayer.iconImage = .expression(
+                    Exp(.step,
+                        Exp(.get, "remainingCooldown"),
+                        defaultIcon,
+                        1, cooldownIcon
+                    )
                 )
                 
-                // Symbol Layer 설정
-                var symbolLayer = SymbolLayer(id: symbolLayerId, source: sourceId)
-                symbolLayer.iconImage = .constant(.name(assetImageName)) // Asset 이미지 사용
-                symbolLayer.iconSize = .constant(0.2) // 아이콘 크기 조정
+                symbolLayer.iconSize = .constant(0.16) // 아이콘 크기 조정
                 symbolLayer.iconAnchor = .constant(.center) // 아이콘 위치
                 symbolLayer.iconAllowOverlap = .constant(true) // 중첩 허용
                 symbolLayer.iconIgnorePlacement = .constant(true) // 배치 무시
+                symbolLayer.iconOpacity = .constant(1.0)
                 
-                symbolLayer.iconOpacity = .expression(
-                    Exp(.step,
-                        Exp(.get, "remainingCooldown"), // ✅ remainingCooldown 값을 기준으로 조건 적용
-                        1.0,  // 🔥 기본값 (쿨다운이 남아있으면 0.8 유지)
-                        0.1,  // ✅ remainingCooldown이 0 이하일 때
-                        0.5   // 🔥 투명도 낮춰서 흐려지게 설정
-                       )
-                )
+//                symbolLayer.iconOpacity = .expression(
+//                    Exp(.step,
+//                        Exp(.get, "remainingCooldown"), // ✅ remainingCooldown 값을 기준으로 조건 적용
+//                        1.0,  // 🔥 기본값 (쿨다운이 남아있으면 0.8 유지)
+//                        1.0,  // ✅ remainingCooldown이 0 이하일 때
+//                        1.0   // 🔥 투명도 낮춰서 흐려지게 설정
+//                       )
+//                )
                 
                 try mapView.mapboxMap.addLayer(symbolLayer)
                 // Mapbox 지도에 레이어 추가
