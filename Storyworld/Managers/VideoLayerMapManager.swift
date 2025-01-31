@@ -164,7 +164,7 @@ final class VideoLayerMapManager {
                     )
                 )
                 
-                symbolLayer.iconSize = .constant(0.16) // 아이콘 크기 조정
+                symbolLayer.iconSize = .constant(0.2) // 아이콘 크기 조정
                 symbolLayer.iconAnchor = .constant(.center) // 아이콘 위치
                 symbolLayer.iconAllowOverlap = .constant(true) // 중첩 허용
                 symbolLayer.iconIgnorePlacement = .constant(true) // 배치 무시
