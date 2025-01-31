@@ -34,10 +34,10 @@ final class TileManager {
     
     struct TileInfo: Codable {
             let id: String // 고유 식별자
-            var layerData: [MapCircleService.CircleData] // 해당 타일의 Video-Circle 데이터
+            var layerData: [CircleData] // 해당 타일의 Video-Circle 데이터
             var isVisible: Bool // 타일이 현재 표시되고 있는지 여부
 
-            init(id: String = UUID().uuidString, layerData: [MapCircleService.CircleData], isVisible: Bool) {
+            init(id: String = UUID().uuidString, layerData: [CircleData], isVisible: Bool) {
                 self.id = id
                 self.layerData = layerData
                 self.isVisible = isVisible

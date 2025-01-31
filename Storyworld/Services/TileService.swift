@@ -40,7 +40,7 @@ final class TileService {
     }
     
     /// 🔹 타일 정보를 저장 (중복 방지 및 가시성 업데이트 포함)
-    func saveTileInfo(for tile: Tile, layerData: [MapCircleService.CircleData], isVisible: Bool) {
+    func saveTileInfo(for tile: Tile, layerData: [CircleData], isVisible: Bool) {
         let tileKey = tile.toKey()
         
         if let existingTileInfo = tileData[tileKey] {
@@ -56,7 +56,7 @@ final class TileService {
 
         // 🔥 CircleData 생성 시 tileKey 추가
         let updatedLayerData = layerData.map { circle in
-            MapCircleService.CircleData(
+            CircleData(
                 genre: circle.genre,
                 rarity: circle.rarity,
                 location: circle.location,
@@ -86,7 +86,7 @@ final class TileService {
     }
     
     /// 🔹 여러 타일 정보를 한 번에 저장
-    func saveMultipleTileInfo(tileInfoDict: [Tile: [MapCircleService.CircleData]], isVisible: Bool) {
+    func saveMultipleTileInfo(tileInfoDict: [Tile: [CircleData]], isVisible: Bool) {
         var updated = false
         
         for (tile, layerData) in tileInfoDict {
@@ -188,7 +188,7 @@ final class TileService {
     }
     
     /// 특정 CircleData의 tileKey를 기반으로 lastDropTime 업데이트
-    func updateLastDropTime(for circleData: MapCircleService.CircleData) {
+    func updateLastDropTime(for circleData: CircleData) {
         let tileKey = circleData.tileKey  // 🔥 tileKey를 가져옴
 
         guard var tileInfo = tileData[tileKey] else {
@@ -197,7 +197,7 @@ final class TileService {
         }
 
         // 🔥 해당 타일의 CircleData를 업데이트
-        var updatedLayerData = tileInfo.layerData.map { circle -> MapCircleService.CircleData in
+        var updatedLayerData = tileInfo.layerData.map { circle -> CircleData in
             if circle.id == circleData.id {
                 // 같은 CircleData를 찾으면 lastDropTime 업데이트
                 var updatedCircle = circle

@@ -19,7 +19,7 @@ final class VideoLayerMapManager {
         startCooldownUpdate() // ✅ 초기화 시 타이머 시작
     }
     
-    func addGenreCircles(data: [MapCircleService.CircleData], userLocation: CLLocationCoordinate2D, isScan: Bool = false) {
+    func addGenreCircles(data: [CircleData], userLocation: CLLocationCoordinate2D, isScan: Bool = false) {
         for (index, item) in data.enumerated() {
             let location = item.location
             
@@ -68,67 +68,78 @@ final class VideoLayerMapManager {
                 try mapView.mapboxMap.addSource(geoJSONSource)
                 
                 // Glow Layer 설정
-                if item.rarity == .diamond || item.rarity == .ruby {
+                if item.rarity == .diamond || item.rarity == .ruby || item.rarity == .gold {
                     var glowLayer = CircleLayer(id: glowLayerId, source: sourceId)
                     glowLayer.circleColor = .expression(
                         Exp(.match,
-                            Exp(.get, "genre"),
-                            VideoGenre.entertainment.rawValue, StyleColor(VideoGenre.entertainment.uiColor).rawValue,
-                            VideoGenre.talk.rawValue, StyleColor(VideoGenre.talk.uiColor).rawValue,
-                            VideoGenre.music.rawValue, StyleColor(VideoGenre.music.uiColor).rawValue,
-                            VideoGenre.sports.rawValue, StyleColor(VideoGenre.sports.uiColor).rawValue,
-                            VideoGenre.vlog.rawValue, StyleColor(VideoGenre.vlog.uiColor).rawValue,
-                            VideoGenre.fashion.rawValue, StyleColor(VideoGenre.fashion.uiColor).rawValue,
-                            VideoGenre.food.rawValue, StyleColor(VideoGenre.food.uiColor).rawValue,
-                            VideoGenre.education.rawValue, StyleColor(VideoGenre.education.uiColor).rawValue,
-                            VideoGenre.game.rawValue, StyleColor(VideoGenre.game.uiColor).rawValue,
+                            Exp(.get, "rarity"),
+                            VideoRarity.diamond.rawValue, StyleColor(VideoRarity.diamond.uiColor).rawValue,
+                            VideoRarity.ruby.rawValue, StyleColor(VideoRarity.ruby.uiColor).rawValue,
+                            VideoRarity.gold.rawValue, StyleColor(VideoRarity.gold.uiColor).rawValue,
                             StyleColor(UIColor.gray).rawValue // 기본값
                            )
                     )
                     glowLayer.circleRadius = .expression(
                         Exp(.match,
                             Exp(.get, "rarity"),
+                            VideoRarity.gold.rawValue, 30.0,
                             VideoRarity.diamond.rawValue, 30.0,
-                            VideoRarity.ruby.rawValue, 50.0,
+                            VideoRarity.ruby.rawValue, 40.0,
                             0.0 // 기본값
                            )
                     )
-                    glowLayer.circleBlur = .constant(1.0)
-                    glowLayer.circleOpacity = .constant(1.0)
+                    glowLayer.circleBlur = .expression(
+                        Exp(.match,
+                            Exp(.get, "rarity"),
+                            VideoRarity.gold.rawValue, 2.0,
+                            VideoRarity.diamond.rawValue, 1.0,
+                            VideoRarity.ruby.rawValue, 1.0,
+                            0.0 // 기본값
+                           )
+                    )
+                    glowLayer.circleOpacity = .expression(
+                        Exp(.match,
+                            Exp(.get, "rarity"),
+                            VideoRarity.gold.rawValue, 1.0,
+                            VideoRarity.diamond.rawValue, 1.0,
+                            VideoRarity.ruby.rawValue, 1.0,
+                            0.0 // 기본값
+                           )
+                    )
                     
                     try mapView.mapboxMap.addLayer(glowLayer)
                 }
                 
-                // Circle Layer 설정
-                var circleLayer = CircleLayer(id: circleLayerId, source: sourceId)
-                // ✅ "remainingCooldown"이 0보다 크면 흰색, 아니면 기존 장르 색상
-                circleLayer.circleColor = .expression(
-                    Exp(.match,
-                        Exp(.get, "genre"),
-                        VideoGenre.entertainment.rawValue, StyleColor(VideoGenre.entertainment.uiColor).rawValue,
-                        VideoGenre.talk.rawValue, StyleColor(VideoGenre.talk.uiColor).rawValue,
-                        VideoGenre.music.rawValue, StyleColor(VideoGenre.music.uiColor).rawValue,
-                        VideoGenre.sports.rawValue, StyleColor(VideoGenre.sports.uiColor).rawValue,
-                        VideoGenre.vlog.rawValue, StyleColor(VideoGenre.vlog.uiColor).rawValue,
-                        VideoGenre.fashion.rawValue, StyleColor(VideoGenre.fashion.uiColor).rawValue,
-                        VideoGenre.food.rawValue, StyleColor(VideoGenre.food.uiColor).rawValue,
-                        VideoGenre.education.rawValue, StyleColor(VideoGenre.education.uiColor).rawValue,
-                        VideoGenre.game.rawValue, StyleColor(VideoGenre.game.uiColor).rawValue,
-                        StyleColor(UIColor.gray).rawValue // 기본값
-                       )
-                )
-                circleLayer.circleRadius = .constant(14.0)
-                circleLayer.circleOpacity = .expression(
-                    Exp(.step,
-                        Exp(.get, "remainingCooldown"), // ✅ remainingCooldown 값을 기준으로 조건 적용
-                        1.0,  // 🔥 기본값 (쿨다운이 남아있으면 0.8 유지)
-                        0.1,  // ✅ remainingCooldown이 0 이하일 때
-                        0.5   // 🔥 투명도 낮춰서 흐려지게 설정
-                       )
-                )
+//                // Circle Layer 설정
+//                var circleLayer = CircleLayer(id: circleLayerId, source: sourceId)
+//                // ✅ "remainingCooldown"이 0보다 크면 흰색, 아니면 기존 장르 색상
+//                circleLayer.circleColor = .expression(
+//                    Exp(.match,
+//                        Exp(.get, "genre"),
+//                        VideoGenre.entertainment.rawValue, StyleColor(VideoGenre.entertainment.uiColor).rawValue,
+//                        VideoGenre.talk.rawValue, StyleColor(VideoGenre.talk.uiColor).rawValue,
+//                        VideoGenre.music.rawValue, StyleColor(VideoGenre.music.uiColor).rawValue,
+//                        VideoGenre.sports.rawValue, StyleColor(VideoGenre.sports.uiColor).rawValue,
+//                        VideoGenre.vlog.rawValue, StyleColor(VideoGenre.vlog.uiColor).rawValue,
+//                        VideoGenre.fashion.rawValue, StyleColor(VideoGenre.fashion.uiColor).rawValue,
+//                        VideoGenre.food.rawValue, StyleColor(VideoGenre.food.uiColor).rawValue,
+//                        VideoGenre.education.rawValue, StyleColor(VideoGenre.education.uiColor).rawValue,
+//                        VideoGenre.game.rawValue, StyleColor(VideoGenre.game.uiColor).rawValue,
+//                        StyleColor(UIColor.gray).rawValue // 기본값
+//                       )
+//                )
+//                circleLayer.circleRadius = .constant(14.0)
+//                circleLayer.circleOpacity = .expression(
+//                    Exp(.step,
+//                        Exp(.get, "remainingCooldown"), // ✅ remainingCooldown 값을 기준으로 조건 적용
+//                        1.0,  // 🔥 기본값 (쿨다운이 남아있으면 0.8 유지)
+//                        0.1,  // ✅ remainingCooldown이 0 이하일 때
+//                        0.5   // 🔥 투명도 낮춰서 흐려지게 설정
+//                       )
+//                )
                 
                 //                 Symbol Layer 설정
-                let assetImageName = "chim" // Asset에 등록된 이미지 이름
+                let assetImageName = "logo_small" // Asset에 등록된 이미지 이름
                 
                 try mapView.mapboxMap.addImage(
                     UIImage(named: assetImageName)!,
@@ -138,7 +149,7 @@ final class VideoLayerMapManager {
                 // Symbol Layer 설정
                 var symbolLayer = SymbolLayer(id: symbolLayerId, source: sourceId)
                 symbolLayer.iconImage = .constant(.name(assetImageName)) // Asset 이미지 사용
-                symbolLayer.iconSize = .constant(0.6) // 아이콘 크기 조정
+                symbolLayer.iconSize = .constant(0.2) // 아이콘 크기 조정
                 symbolLayer.iconAnchor = .constant(.center) // 아이콘 위치
                 symbolLayer.iconAllowOverlap = .constant(true) // 중첩 허용
                 symbolLayer.iconIgnorePlacement = .constant(true) // 배치 무시
@@ -152,9 +163,10 @@ final class VideoLayerMapManager {
                        )
                 )
                 
+                try mapView.mapboxMap.addLayer(symbolLayer)
                 // Mapbox 지도에 레이어 추가
-                try mapView.mapboxMap.addLayer(circleLayer)
-                try mapView.mapboxMap.addLayer(symbolLayer, layerPosition: .above(circleLayer.id))
+//                try mapView.mapboxMap.addLayer(circleLayer)
+//                try mapView.mapboxMap.addLayer(symbolLayer, layerPosition: .above(circleLayer.id))
                 
             } catch {
                 print("❌ 레이어 추가 실패: \(error.localizedDescription)")
@@ -237,7 +249,7 @@ final class VideoLayerMapManager {
     }
     
     // MARK: - 특정 CircleData만 업데이트
-    func updateVideoCircleLayer(for circleData: MapCircleService.CircleData) {
+    func updateVideoCircleLayer(for circleData: CircleData) {
         print("👌 map 강제 업데이트중")
         let tileKey = circleData.tileKey
         let sourceId = "source-\(tileKey)"

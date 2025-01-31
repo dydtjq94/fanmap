@@ -26,9 +26,9 @@ struct DropWithCoinView: View {
     @State private var cooldownRemainingTime: TimeInterval = 0 // 남은 쿨다운 시간
     @State private var cooldownTimer: Timer?
     
-    let circleData: MapCircleService.CircleData
+    let circleData: CircleData
     
-    init(circleData: MapCircleService.CircleData) {
+    init(circleData: CircleData) {
         self.circleData = circleData
         self.dropPrice = circleData.basePrice
         print("\(circleData.basePrice)")
@@ -76,8 +76,9 @@ struct DropWithCoinView: View {
                         .offset(blurOffset)
                     
                     Button(action: {
-                        if !isAnimating {
-                            startImageAnimation()
+                        if !isButtonDisabled { // ✅ 버튼이 이미 눌린 상태면 동작 안 함
+                            isButtonDisabled = true // ✅ 버튼 비활성화
+                            attemptToDropVideo()
                         }
                     }) {
                         Image(systemName: playIcon)
@@ -89,21 +90,28 @@ struct DropWithCoinView: View {
                 
                 // 쿨다운 시간이 남아있으면 시간 표시, 아니면 안내 문구
                 if cooldownRemainingTime > 0 {
-                    Text("쿨다운 남은 시간: \(formatTime(cooldownRemainingTime))")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(.white)
+                    VStack{
+                        Text("🔒 다음 드롭까지 🔒")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundStyle(.white)
+                        Text("\(formatTime(cooldownRemainingTime))")
+                            .font(.system(size: 48, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.bottom, 12)
                 } else {
-                    Text("드롭 주변으로 이동이 필요해요")
+                    Text("🏃주변으로 이동이 필요해요🏃")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(.white)
+                        .padding(.bottom, 24)
                 }
                 
                 // 희귀도 및 장르 뱃지
                 HStack(spacing: 12) {
                     RarityBadgeView(rarity: circleData.rarity)
                     GenreBadgeView(genre: circleData.genre)
+                    CooldownBadgeView(circleData: circleData)
                 }
-                .padding(.top, 32)
                 
                 // 닫기 버튼
                 Button(action: {
@@ -113,7 +121,7 @@ struct DropWithCoinView: View {
                     }
                 }) {
                     HStack(spacing: 5) { // ✅ 아이콘과 텍스트를 가로로 정렬
-                        Text("지금 바로 열기 ")
+                        Text("지금 바로 열기")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.black)
                         

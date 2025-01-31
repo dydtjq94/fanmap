@@ -78,7 +78,7 @@ final class VideoController {
         }
     }
     
-    func decodeCircleData(from jsonString: String) -> MapCircleService.CircleData? {
+    func decodeCircleData(from jsonString: String) -> CircleData? {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase // ✅ 변환된 값이 올바르게 매핑되도록 설정
 
@@ -88,7 +88,7 @@ final class VideoController {
         }
         
         do {
-            let decodedData = try decoder.decode(MapCircleService.CircleData.self, from: jsonData)
+            let decodedData = try decoder.decode(CircleData.self, from: jsonData)
             print("✅ 디코딩 성공: \(decodedData)")
             return decodedData
         } catch {

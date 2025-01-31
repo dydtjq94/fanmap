@@ -75,8 +75,8 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
     private func setupLocationManager() {
         locationManager.delegate = self
         locationManager.requestWhenInUseAuthorization()
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 5
+        locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation // 🚀 GPS 정확도 최대
+        locationManager.distanceFilter = kCLDistanceFilterNone // 🚀 항상 업데이트
         locationManager.startUpdatingLocation()
     }
     
@@ -216,8 +216,8 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
     
     
     /// 여러 타일을 한 번에 저장하는 새로운 함수
-    private func batchSaveTileInfo(tiles: [Tile], coordinate: CLLocationCoordinate2D, isScan: Bool) -> [Tile: [MapCircleService.CircleData]] {
-        var newTileInfoDict: [Tile: [MapCircleService.CircleData]] = [:]
+    private func batchSaveTileInfo(tiles: [Tile], coordinate: CLLocationCoordinate2D, isScan: Bool) -> [Tile: [CircleData]] {
+        var newTileInfoDict: [Tile: [CircleData]] = [:]
         
         for tile in tiles {
             let newCircleData = mapCircleService.createFilteredCircleData(visibleTiles: [tile], tileManager: tileManager)
@@ -240,7 +240,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         
         var tilesToUpdate: [Tile] = []
         var newTiles: [Tile] = []
-        var circlesToAdd: [(Tile, [MapCircleService.CircleData])] = []
+        var circlesToAdd: [(Tile, [CircleData])] = []
         
         for tile in visibleTiles {
             if let tileInfo = tileService.getTileInfo(for: tile) {
@@ -288,43 +288,49 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         if timeInBackground > Constants.Numbers.backgroundLongTimer {
             // 1시간 이상 백그라운드에 있었다면 초기 상태로 복원
             print("🔄 앱이 \(timeInBackground)초 이상 백그라운드에 있었습니다. 초기 상태로 복원합니다.")
-            
-            // 사용자 위치 가져오기
-            guard let coordinate = mapView.location.latestLocation?.coordinate else {
-                print("⚠️ 현재 위치 정보를 가져올 수 없습니다.")
-                return
+
+            // ✅ 위치 강제 업데이트 요청
+            locationManager.startUpdatingLocation()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self, let coordinate = self.locationManager.location?.coordinate else {
+                    print("⚠️ 현재 위치 정보를 가져올 수 없습니다.")
+                    return
+                }
+
+                self.videoLayerMapManager.removeAllVideoLayers()
+                self.locationCircleManager.addCircleLayers(to: self.mapView, at: coordinate)
+                self.moveCameraToCurrentLocation()
+                self.tileService.resetTileVisibility()
+
+                // 타일 데이터 로드 및 Circle 레이어 추가
+                self.loadTilesAndAddCircles(at: coordinate)
+                self.reloadLocationPuck()
             }
-            
-            videoLayerMapManager.removeAllVideoLayers()
-            locationCircleManager.addCircleLayers(to: mapView, at: coordinate)
-            moveCameraToCurrentLocation()
-            // 캐시된 타일 데이터 초기화 (선택 사항)
-            tileService.resetTileVisibility()
-            
-            // 타일 데이터 로드 및 Circle 레이어 추가
-            loadTilesAndAddCircles(at: coordinate)
-            
-            reloadLocationPuck()
-            
+
         } else if timeInBackground > Constants.Numbers.backgroundTimer { // 예: 30초
             // 30초 이상 백그라운드에 있었다면 현재 위치로 이동 및 데이터 갱신
             print("🔄 앱이 \(timeInBackground)초 이상 백그라운드에 있었습니다. 현재 위치로 화면 이동.")
-            moveCameraToCurrentLocation()
-            
-            // 사용자 위치 가져오기
-            guard let coordinate = mapView.location.latestLocation?.coordinate else {
-                print("⚠️ 현재 위치 정보를 가져올 수 없습니다.")
-                return
+
+            // ✅ 위치 강제 업데이트 요청
+            locationManager.startUpdatingLocation()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self, let coordinate = self.locationManager.location?.coordinate else {
+                    print("⚠️ 현재 위치 정보를 가져올 수 없습니다.")
+                    return
+                }
+
+                self.moveCameraToCurrentLocation()
+                self.loadTilesAndAddCircles(at: coordinate)
+                self.reloadLocationPuck()
             }
-            
-            // 타일 데이터 로드 및 Circle 레이어 추가
-            loadTilesAndAddCircles(at: coordinate)
-            
-            reloadLocationPuck()
+
         } else {
             print("⏳ 앱이 \(timeInBackground)초 동안 백그라운드에 있었습니다. 업데이트 필요 없음.")
         }
     }
+
     
     // MARK: - 앱이 백그라운드로 전환될 때
     @objc private func handleAppDidEnterBackground() {

@@ -33,7 +33,7 @@ final class DropManager {
         }
     }
     
-    func showDropWithCoinView(circleData: MapCircleService.CircleData) {
+    func showDropWithCoinView(circleData: CircleData) {
         UIImpactFeedbackGenerator.trigger(.heavy)
         
         // 최상위 ViewController 찾기
@@ -52,7 +52,7 @@ final class DropManager {
            }
     }
     
-    func handleDropWithinDefault(circleData: MapCircleService.CircleData) {
+    func handleDropWithinDefault(circleData: CircleData) {
         print("🎯 클릭된 Circle - \(circleData)")
         
         // 남은 쿨다운 계산
@@ -72,7 +72,7 @@ final class DropManager {
         }
     }
     
-    func presentDropController(circleData: MapCircleService.CircleData) {
+    func presentDropController(circleData: CircleData) {
         let dropController = DropController(circleData: circleData, mapView: mapView)
         dropController.modalPresentationStyle = .overFullScreen
         dropController.modalTransitionStyle = .coverVertical

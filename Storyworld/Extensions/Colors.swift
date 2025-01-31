@@ -10,7 +10,7 @@ import UIKit
 
 struct AppColors {
     static let smallScanCircle = UIColor(hex: "#cdfeea").withAlphaComponent(0.0)
-    static let largeScanCircle = UIColor(hex: "#ff9daa").withAlphaComponent(0.4)
+    static let largeScanCircle = UIColor(hex: "#2dfb65").withAlphaComponent(0.4)
 //    static let largeScanCircle = UIColor(hex: "#adb3b1").withAlphaComponent(0.6)
     
     static let mapVideoIcon = UIColor(hex: "#ebe7e0").withAlphaComponent(1.0)

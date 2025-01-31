@@ -190,7 +190,7 @@ final class ScanManager {
         }
     }
     
-    private var preloadedTiles: [(Tile, [MapCircleService.CircleData])] = []
+    private var preloadedTiles: [(Tile, [CircleData])] = []
     
     private func preloadTilesData(at coordinate: CLLocationCoordinate2D) {
         print("📥 타일 데이터 미리 로드 시작: \(coordinate)")
@@ -200,8 +200,8 @@ final class ScanManager {
 
         preloadedTiles.removeAll()
 
-        var newTileInfoDict: [Tile: [MapCircleService.CircleData]] = [:]
-        var existingTiles: [(Tile, [MapCircleService.CircleData])] = []
+        var newTileInfoDict: [Tile: [CircleData]] = [:]
+        var existingTiles: [(Tile, [CircleData])] = []
 
         for tile in visibleTiles {
             if let tileInfo = tileService.getTileInfo(for: tile) {
@@ -227,7 +227,7 @@ final class ScanManager {
         print("✅ 타일 데이터 사전 로드 완료")
     }
     
-    private func addTilesToMap(_ tiles: [(Tile, [MapCircleService.CircleData])], coordinate: CLLocationCoordinate2D, isScan: Bool) {
+    private func addTilesToMap(_ tiles: [(Tile, [CircleData])], coordinate: CLLocationCoordinate2D, isScan: Bool) {
         print("📊 즉시 타일 추가: \(tiles.count)개")
 
         var tilesToUpdate: [Tile] = []

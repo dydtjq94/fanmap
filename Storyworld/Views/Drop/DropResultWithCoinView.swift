@@ -55,9 +55,9 @@ struct DropResultWithCoinView: View {
                             }
                             Spacer()
                             Button(action: {
+                                UIImpactFeedbackGenerator.trigger(.light)
                                 if let url = URL(string: "https://www.youtube.com/watch?v=\(video.videoId)") {
                                     UIApplication.shared.open(url)
-                                    UIImpactFeedbackGenerator.trigger(.light)
                                 }
                             }) {
                                 Image("youtube-logo") // ▶️ 아이콘 변경 (재생 버튼 느낌)

@@ -30,11 +30,11 @@ final class DropController: UIViewController {
     
     private let dropView = DropView()
     private var selectedVideo: Video?
-    private let circleData: MapCircleService.CircleData // 🔥 CircleData를 저장
+    private let circleData: CircleData // 🔥 CircleData를 저장
     private let mapView: MapView
     private var isFetchCompleted = false // 🔥 Fetch 완료 여부 추적 변수 추가
     
-    init(circleData: MapCircleService.CircleData, mapView: MapView) {
+    init(circleData: CircleData, mapView: MapView) {
         self.circleData = circleData
         self.mapView = mapView
         super.init(nibName: nil, bundle: nil)
@@ -128,9 +128,9 @@ final class DropController: UIViewController {
         view.addSubview(infoStackView)
         
         // Open Drop Button 설정
-        openDropButton.setTitle("영상 소환", for: .normal)
+        openDropButton.setTitle("영상 드롭 열기", for: .normal)
         openDropButton.setTitleColor(.black, for: .normal)
-        openDropButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+        openDropButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
         openDropButton.backgroundColor = AppColors.mainColor
         openDropButton.layer.cornerRadius = 10
         openDropButton.addTarget(self, action: #selector(handleDrop), for: .touchUpInside)
