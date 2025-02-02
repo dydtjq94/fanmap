@@ -37,7 +37,7 @@ final class CameraManager {
         let cameraOptions = CameraOptions(center: location, zoom: zoomLevel)
         
         // 애니메이션을 사용하여 카메라 이동
-        mapView.camera.ease(to: cameraOptions, duration: 0.6, curve: .easeInOut)
+        mapView.camera.ease(to: cameraOptions, duration: 0.2, curve: .easeInOut)
         
         print("📍 현재 위치로 카메라 이동 완료: \(location.latitude), \(location.longitude)")
     }

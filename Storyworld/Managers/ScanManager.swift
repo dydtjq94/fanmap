@@ -70,7 +70,7 @@ final class ScanManager {
 
     private func startScanAnimation(centerCoordinate: CLLocationCoordinate2D, completion: @escaping () -> Void) {
         let scanLineWidth: CGFloat = 4.0
-        let scanDuration: TimeInterval = 2.0
+        let scanDuration: TimeInterval = 1.5
         let fadeOutDelay: TimeInterval = 0.01
         let fadeOutDuration: TimeInterval = 0.01
 
@@ -120,7 +120,7 @@ final class ScanManager {
         let mapWidth = mapView.frame.width
         let mapHeight = mapView.frame.height
         
-        let numberOfCircles = Int.random(in: 8...12)
+        let numberOfCircles = Int.random(in: 5...10)
         let genres = VideoGenre.allCases
         
         for _ in 0..<numberOfCircles {
@@ -173,7 +173,7 @@ final class ScanManager {
         isZooming = true
         print("🔍 줌 시작: \(zoomLevel) 레벨로 이동 중...")
         
-        mapView.camera.ease(to: CameraOptions(zoom: zoomLevel), duration: 0.3, curve: .easeInOut) { [weak self] position in
+        mapView.camera.ease(to: CameraOptions(zoom: zoomLevel), duration: 0.2, curve: .easeInOut) { [weak self] position in
             guard let self = self else { return }
             
             if position == .end {

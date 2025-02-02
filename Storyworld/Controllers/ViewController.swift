@@ -145,6 +145,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         
         // ✅ CameraManager, StyleManager 초기화
         cameraManager = CameraManager(mapView: mapView)
+        cameraManager?.configureGestureOptions() // ✅ 여기서 확실히 설정 적용
         mapStyleManager = MapStyleManager(mapView: mapView)
         videoLayerMapManager = VideoLayerMapManager(mapView: mapView)
         videoLayerMapManager.startCooldownUpdate()

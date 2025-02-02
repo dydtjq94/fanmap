@@ -25,12 +25,12 @@ struct StartView: View {
             HStack {
                 Image("logo")
                     .resizable()
-                    .frame(width: 24, height: 24)
+                    .frame(width: 28, height: 28)
                 
                 Image("logo_korean")
                     .resizable()
-                    .frame(width: 56, height:28)
-                    .padding(.leading, -6)
+                    .frame(width: 100, height:28)
+                    .padding(.leading, -2)
             }
             .padding(.top, 24)
             
@@ -69,7 +69,7 @@ struct StartView: View {
                 }
                 
                 // ✅ 하단에 텍스트 추가
-                Text("Chimchakmap For 한국인  By 개청자")
+                Text("Welcome to Storyworld!")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white.opacity(0.8))
                     .padding(.top, 12)
