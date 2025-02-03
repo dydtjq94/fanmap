@@ -298,12 +298,8 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
                     print("⚠️ 현재 위치 정보를 가져올 수 없습니다.")
                     return
                 }
-
-                self.videoLayerMapManager.removeAllVideoLayers()
-                self.locationCircleManager.addCircleLayers(to: self.mapView, at: coordinate)
+                
                 self.moveCameraToCurrentLocation()
-                self.tileService.resetTileVisibility()
-
                 // 타일 데이터 로드 및 Circle 레이어 추가
                 self.loadTilesAndAddCircles(at: coordinate)
                 self.reloadLocationPuck()

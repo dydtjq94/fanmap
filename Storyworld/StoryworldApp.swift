@@ -9,6 +9,8 @@ import SwiftUI
 
 @main
 struct StoryworldApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     @StateObject private var userService = UserService.shared
     @State private var isSplashScreenActive = true
 
