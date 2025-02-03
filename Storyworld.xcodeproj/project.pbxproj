@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		D0A686C02D50643E008ACA44 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D0A686BF2D50643E008ACA44 /* FirebaseAuth */; };
 		D0A686C22D50643E008ACA44 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D0A686C12D50643E008ACA44 /* FirebaseFirestore */; };
+		D0A686C52D5067AE008ACA44 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0A685FE2D505CDC008ACA44 /* GoogleService-Info.plist */; };
 		D0C335F42D2E7BA7003ACD91 /* MapboxMaps in Frameworks */ = {isa = PBXBuildFile; productRef = D0C335F32D2E7BA7003ACD91 /* MapboxMaps */; };
 /* End PBXBuildFile section */
 
@@ -259,6 +260,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0A686C52D5067AE008ACA44 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -507,7 +509,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_ASSET_PATHS = "\"Storyworld/Preview Content\"";
 				DEVELOPMENT_TEAM = CA7A8VMJTL;
 				ENABLE_PREVIEWS = YES;
@@ -547,7 +549,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_ASSET_PATHS = "\"Storyworld/Preview Content\"";
 				DEVELOPMENT_TEAM = CA7A8VMJTL;
 				ENABLE_PREVIEWS = YES;

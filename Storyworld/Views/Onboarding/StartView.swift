@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import AuthenticationServices
 
 struct StartView: View {
     @AppStorage("isUserInitialized") private var isUserInitialized = false
     @StateObject private var userService = UserService.shared
+    @StateObject private var loginService = LoginService.shared
     
     @State private var randomImageNumber: Int = Int.random(in: 1...10) // 랜덤 이미지
     @State private var isAnimating: Bool = false
@@ -18,7 +20,7 @@ struct StartView: View {
     @State private var playIcon: String = "play.fill"
     @State private var blurOffset: CGSize = .zero
     @State private var imageOffset: CGSize = .zero
-
+    
     var body: some View {
         VStack {
             // ✅ 로고 애니메이션 적용
@@ -54,7 +56,7 @@ struct StartView: View {
                         .offset(blurOffset)
                     
                     Button(action: {
-
+                        
                     }) {
                         Image(systemName: playIcon)
                             .font(.system(size: 36, weight: .bold))
@@ -77,24 +79,20 @@ struct StartView: View {
             
             Spacer()
             
-            // ✅ 시작 버튼 (애니메이션 후 화면 전환)
-            Button(action: {
-                if !isButtonDisabled { // ✅ 버튼이 이미 눌린 상태면 동작 안 함
-                    isButtonDisabled = true // ✅ 버튼 비활성화
-                    startFullSequenceAndNavigate()
-                    UIImpactFeedbackGenerator.trigger(.heavy)
+            // ✅ Apple 로그인 버튼 추가 (LoginService 활용)
+            SignInWithAppleButton(
+                .signIn,
+                onRequest: { request in
+                    loginService.handleAppleSignInRequest(request)
+                },
+                onCompletion: { result in
+                    loginService.handleAppleSignInCompletion(result)
                 }
-            }) {
-                Text("영상 수집 시작하기")
-                    .font(.system(size: 18, weight: .bold))
-                    .bold()
-                    .padding()
-                    .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
-                    .background(Color(AppColors.mainColor))
-                    .foregroundColor(.black)
-                    .cornerRadius(10)
-                    .padding(.vertical, 16)
-            }
+            )
+            .frame(height: 50)
+            .padding(.horizontal, 16)
+            .cornerRadius(10)
+            .padding(.vertical, 16)
         }
         .frame(maxWidth: .infinity)
         .background(Color(AppColors.mainBgColor))
@@ -103,7 +101,7 @@ struct StartView: View {
     // ✅ 전체 애니메이션 실행 후 화면 이동
     private func startFullSequenceAndNavigate() {
         startImageAnimation()
-
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             userService.createNewUser()
             isUserInitialized = true
