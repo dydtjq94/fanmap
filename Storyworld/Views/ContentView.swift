@@ -35,9 +35,16 @@ struct ContentView: View {
         .environmentObject(userService)  // 하위 뷰에 전달
         .tint(Color.white)
         .onAppear {
-            UITabBar.appearance().unselectedItemTintColor = UIColor(hex:"#434343")
-            UITabBar.appearance().backgroundColor = UIColor(hex:"#1B1B1B")
-            userService.initializeUserIfNeeded()  // 앱 시작 시 초기화
+            let tabBarAppearance = UITabBarAppearance()
+            tabBarAppearance.backgroundColor = UIColor(hex: "#1B1B1B") // ✅ 원하는 색상 고정
+            tabBarAppearance.shadowColor = .clear // ✅ 하단 경계선 제거
+
+            UITabBar.appearance().standardAppearance = tabBarAppearance
+            UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+            UITabBar.appearance().unselectedItemTintColor = UIColor(hex: "#434343") // ✅ 비활성화 아이콘 색
+            UITabBar.appearance().tintColor = .white // ✅ 활성화 아이콘 색
+            
+            userService.initializeUserIfNeeded()
         }
         
         .onChange(of: selectedTab) {

@@ -84,9 +84,7 @@ class LoginService: ObservableObject {
                 bio: "소개글을 작성하세요",
                 experience: 0,
                 balance: 1000,
-                gems: 0,
-                collectedVideos: [],
-                playlists: []
+                gems: 0
             )
             await saveUserToFirestore(uid: uid, userData: newUser)
             userService.saveUser(newUser)
@@ -112,7 +110,7 @@ class LoginService: ObservableObject {
             let userSnapshot = try await userRef.getDocument()
             guard let userData = userSnapshot.data() else { return nil }
 
-            var user = User(
+            let user = User(
                 id: uid,
                 email: userData["email"] as? String ?? "",
                 nickname: userData["nickname"] as? String ?? "",
@@ -120,17 +118,18 @@ class LoginService: ObservableObject {
                 bio: userData["bio"] as? String ?? "",
                 experience: userData["experience"] as? Int ?? 0,
                 balance: userData["balance"] as? Int ?? 0,
-                gems: userData["gems"] as? Int ?? 0,
-                collectedVideos: [],
-                playlists: []
+                gems: userData["gems"] as? Int ?? 0
             )
 
-            // ✅ collectedVideos 불러오기 (서브컬렉션)
+            // ✅ Firestore에서 collectedVideos & playlists 가져와서 UserDefaults에 저장
             async let collectedVideos = fetchCollectedVideos(userRef: userRef)
             async let playlists = fetchPlaylists(userRef: userRef)
 
-            user.collectedVideos = await collectedVideos
-            user.playlists = await playlists
+            let userCollectedVideos = await collectedVideos
+            let userPlaylists = await playlists
+
+            UserDefaults.standard.saveCollectedVideos(userCollectedVideos) // ✅ UserDefaults에 저장
+            UserDefaults.standard.savePlaylists(userPlaylists) // ✅ UserDefaults에 저장
 
             return user
 
@@ -139,6 +138,7 @@ class LoginService: ObservableObject {
             return nil
         }
     }
+
     
     // ✅ Firestore에서 `collectedVideos` 서브컬렉션 가져오기
     private func fetchCollectedVideos(userRef: DocumentReference) async -> [CollectedVideo] {
@@ -231,4 +231,24 @@ class LoginService: ObservableObject {
         let hashedData = SHA256.hash(data: inputData)
         return hashedData.map { String(format: "%02x", $0) }.joined()
     }
+    
+    func waitForDataSync() async {
+        // ✅ Firestore 데이터 동기화 (비동기 작업이므로 Task.sleep 사용)
+        do {
+            print("🕒 Firestore 데이터 동기화 중...")
+            
+            // ✅ 1. Firestore에서 collectedVideos 가져오기
+            await CollectionService.shared.syncCollectedVideosWithFirestore()
+            
+            // ✅ 2. Firestore에서 playlists 가져오기
+            await PlaylistService.shared.syncPlaylistsWithFirestore()
+
+            // ✅ 데이터가 다 불러와질 때까지 0.5초 대기
+            try await Task.sleep(nanoseconds: 500_000_000) // 0.5초 대기
+            print("✅ Firestore 데이터 동기화 완료!")
+        } catch {
+            print("❌ Firestore 데이터 동기화 중 오류 발생: \(error.localizedDescription)")
+        }
+    }
+
 }

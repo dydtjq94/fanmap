@@ -14,9 +14,8 @@ struct StartView: View {
     @StateObject private var loginService = LoginService.shared
     
     @State private var randomImageNumber: Int = Int.random(in: 1...10) // 랜덤 이미지
-    @State private var isAnimating: Bool = false
-    @State private var isButtonDisabled: Bool = false // ✅ 버튼 비활성화 상태
-    @State private var timer: Timer?
+    @State private var isLoading: Bool = false // 로그인 진행 상태
+    
     @State private var playIcon: String = "play.fill"
     @State private var blurOffset: CGSize = .zero
     @State private var imageOffset: CGSize = .zero
@@ -80,22 +79,47 @@ struct StartView: View {
             
             Spacer()
             
-            // ✅ Apple 로그인 버튼 추가 (LoginService 활용)
-            SignInWithAppleButton(
-                .signIn,
-                onRequest: { request in
-                    loginService.handleAppleSignInRequest(request)
-                },
-                onCompletion: { result in
-                    loginService.handleAppleSignInCompletion(result)
+            // ✅ Apple 로그인 버튼 (로딩 상태 적용)
+            ZStack {
+                SignInWithAppleButton(
+                    .signIn,
+                    onRequest: { request in
+                        isLoading = true // ✅ 로그인 시작
+                        loginService.handleAppleSignInRequest(request)
+                    },
+                    onCompletion: { result in
+                        loginService.handleAppleSignInCompletion(result)
+
+                        Task {
+                            // ✅ Firestore에서 데이터 동기화가 끝날 때까지 로딩 유지
+                            await loginService.waitForDataSync()
+                            DispatchQueue.main.async {
+                                isLoading = false // ✅ 데이터 로딩 후 로딩 종료
+                            }
+                        }
+                    }
+                )
+                .frame(height: 50)
+                .signInWithAppleButtonStyle(.white)
+                .cornerRadius(16)
+                .padding(.vertical, 16)
+                .disabled(isLoading) // ✅ 로딩 중에는 버튼 비활성화
+                .opacity(isLoading ? 0.0 : 1.0) // ✅ 로딩 중에는 버튼 투명도 조절
+
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.5)
+                        .background(Color.black.opacity(0.3)) // ✅ 로딩 배경 추가
+                        .frame(width: 50, height: 50) // ✅ 크기 고정
+                        .cornerRadius(25)
                 }
-            )
-            .frame(height: 50)
-            .padding(.horizontal, 16)
-            .cornerRadius(10)
-            .padding(.vertical, 16)
+            }
+
+
         }
         .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
         .background(Color(AppColors.mainBgColor))
     }
     

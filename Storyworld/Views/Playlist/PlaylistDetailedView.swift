@@ -56,7 +56,7 @@ struct PlaylistDetailedView: View {
                         }) {
                             Text(currentPlaylist.name)  // playlist → currentPlaylist로 변경
                                 .font(.title2)
-                                .foregroundColor(.primary)
+                                .foregroundColor(Color(UIColor(hex:"#ffffff")))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .padding(.vertical, 4)
@@ -69,7 +69,7 @@ struct PlaylistDetailedView: View {
                         }) {
                             Text(currentPlaylist.description ?? "설명을 입력하세요")
                                 .font(.body)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color(UIColor(hex:"#CECECE")))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
@@ -110,6 +110,7 @@ struct PlaylistDetailedView: View {
                 }
                 Spacer()
             }
+            .background(Color(UIColor(hex:"#1D1D1D")))
             .overlay(
                 VStack {
                     Spacer() // 상단 공간 확보

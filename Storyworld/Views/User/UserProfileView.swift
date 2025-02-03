@@ -69,7 +69,7 @@ struct UserProfileView: View {
                                 .foregroundColor(Color(AppColors.green1))
                                 .font(.system(size: 12))
                             
-                            Text("\(userService.user?.collectedVideos.count ?? 0)")
+                            Text("\(UserDefaults.standard.loadCollectedVideos().count ?? 0)")
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                         }

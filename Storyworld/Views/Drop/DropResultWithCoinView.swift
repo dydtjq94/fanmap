@@ -82,6 +82,7 @@ struct DropResultWithCoinView: View {
                     withAnimation(Animation.easeInOut(duration: getAnimationDuration(for: video.rarity)).repeatForever(autoreverses: true)) {
                         isGlowing.toggle() // ✅ 어두워졌다 밝아지는 애니메이션 실행
                     }
+                    playHapticPattern(for: video.rarity)
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 
@@ -104,53 +105,78 @@ struct DropResultWithCoinView: View {
             }
         }
     }
+    
+    func playHapticPattern(for rarity: VideoRarity) {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        
+        let repeatCount: Int
+
+        switch rarity {
+        case .silver:
+            repeatCount = 5
+        case .gold:
+            repeatCount = 5
+        case .diamond:
+            repeatCount = 20
+        case .ruby:
+            repeatCount = 20
+        }
+
+        for i in 0..<repeatCount {
+            DispatchQueue.main.asyncAfter(deadline: .now() + (0.025 * Double(i))) {
+                generator.impactOccurred()
+            }
+        }
+    }
+    
+    
     // 🔥 **Rarity별 그림자 색상 설정**
-       func getShadowColor(for rarity: VideoRarity) -> Color {
-           switch rarity {
-           case .silver:
-               return Color.gray.opacity(isGlowing ? 0.3 : 0.1) // 기본적인 은은한 그림자
-           case .gold:
-               return Color.yellow.opacity(isGlowing ? 0.5 : 0.3) // 황금빛
-           case .diamond:
-               return Color.blue.opacity(isGlowing ? 1.0 : 0.7) // 푸른빛이 흐르는 느낌
-           case .ruby:
-               return Color.red.opacity(isGlowing ? 1.0 : 0.7) // 강렬한 붉은빛 (가장 화려함)
-           }
-       }
-
-       // 💡 **Rarity별 그림자 크기 설정**
-       func getShadowRadius(for rarity: VideoRarity) -> CGFloat {
-           switch rarity {
-           case .silver:
-               return isGlowing ? 10 : 5  // 기본적인 그림자
-           case .gold:
-               return isGlowing ? 25 : 20  // 살짝 더 커진 황금빛
-           case .diamond:
-               return isGlowing ? 50 : 30  // 다이아몬드 반짝이는 느낌
-           case .ruby:
-               return isGlowing ? 50 : 30  // 루비가 가장 강렬한 효과 (최대 그림자)
-           }
-       }
-
-       // ⏳ **Rarity별 애니메이션 속도 설정**
-       func getAnimationDuration(for rarity: VideoRarity) -> Double {
-           switch rarity {
-           case .silver:
-               return 2.0 // 차분한 애니메이션
-           case .gold:
-               return 3.0 // 약간 더 빠르게 변화
-           case .diamond:
-               return 3.0 // 빠르고 부드러운 반짝임
-           case .ruby:
-               return 3.0 // 가장 빠르고 강렬한 반짝임
-           }
-       }
+    func getShadowColor(for rarity: VideoRarity) -> Color {
+        switch rarity {
+        case .silver:
+            return Color.gray.opacity(isGlowing ? 0.3 : 0.1) // 기본적인 은은한 그림자
+        case .gold:
+            return Color.yellow.opacity(isGlowing ? 0.5 : 0.3) // 황금빛
+        case .diamond:
+            return Color.blue.opacity(isGlowing ? 1.0 : 0.7) // 푸른빛이 흐르는 느낌
+        case .ruby:
+            return Color.red.opacity(isGlowing ? 1.0 : 0.7) // 강렬한 붉은빛 (가장 화려함)
+        }
+    }
+    
+    // 💡 **Rarity별 그림자 크기 설정**
+    func getShadowRadius(for rarity: VideoRarity) -> CGFloat {
+        switch rarity {
+        case .silver:
+            return isGlowing ? 10 : 5  // 기본적인 그림자
+        case .gold:
+            return isGlowing ? 25 : 20  // 살짝 더 커진 황금빛
+        case .diamond:
+            return isGlowing ? 50 : 30  // 다이아몬드 반짝이는 느낌
+        case .ruby:
+            return isGlowing ? 50 : 30  // 루비가 가장 강렬한 효과 (최대 그림자)
+        }
+    }
+    
+    // ⏳ **Rarity별 애니메이션 속도 설정**
+    func getAnimationDuration(for rarity: VideoRarity) -> Double {
+        switch rarity {
+        case .silver:
+            return 2.0 // 차분한 애니메이션
+        case .gold:
+            return 3.0 // 약간 더 빠르게 변화
+        case .diamond:
+            return 3.0 // 빠르고 부드러운 반짝임
+        case .ruby:
+            return 3.0 // 가장 빠르고 강렬한 반짝임
+        }
+    }
 }
 
 // 🌟 **Rarity별 카드 내부 배경**
 struct RarityCardBackground: View {
     let rarity: VideoRarity
-
+    
     var body: some View {
         switch rarity {
         case .silver:
@@ -178,7 +204,7 @@ struct SilverCardBackground: View {
                 endPoint: .bottomTrailing
             )
             .blur(radius: 6)
-
+            
             // ✨ **더 은은한 빛 반사 효과**
             RadialGradient(
                 gradient: Gradient(colors: [
@@ -210,7 +236,7 @@ struct GoldCardBackground: View {
                 endPoint: .bottomTrailing
             )
             .blur(radius: 6)
-
+            
             // ✨ **더 낮은 광택 효과 (무게감 있는 골드)**
             RadialGradient(
                 gradient: Gradient(colors: [
@@ -240,7 +266,7 @@ struct DiamondCardBackground: View {
                 endPoint: .bottomTrailing
             )
             .blur(radius: 6)
-
+            
             // ✨ **더 차분한 빛 반사 효과**
             RadialGradient(
                 gradient: Gradient(colors: [
@@ -252,7 +278,7 @@ struct DiamondCardBackground: View {
                 endRadius: 250
             )
             .blendMode(.softLight)
-
+            
             // 🌈 **더 차분한 오로라 효과**
             LinearGradient(
                 gradient: Gradient(colors: [
@@ -286,7 +312,7 @@ struct RubyCardBackground: View {
                 endPoint: .bottomTrailing
             )
             .blur(radius: 6) // 더 깊은 느낌 추가
-
+            
             // ✨ **더 은은한 빛 반사 효과**
             RadialGradient(
                 gradient: Gradient(colors: [
@@ -298,7 +324,7 @@ struct RubyCardBackground: View {
                 endRadius: 250
             )
             .blendMode(.softLight)
-
+            
             // 🔥 **더 차분한 루비 오로라 효과**
             LinearGradient(
                 gradient: Gradient(colors: [

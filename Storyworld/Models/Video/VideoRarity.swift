@@ -72,11 +72,11 @@ enum VideoRarity: String, Codable, CaseIterable  {
     var probability: Double {
         switch self {
         case .silver:
-            return 0.75
+            return 0.8
         case .gold:
-            return 0.2
+            return 0.17
         case .diamond:
-            return 0.045
+            return 0.025
         case .ruby:
             return 0.005
         }

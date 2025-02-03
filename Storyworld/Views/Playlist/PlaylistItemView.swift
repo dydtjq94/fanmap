@@ -38,11 +38,11 @@ struct PlaylistItemView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(playlist.name)
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(Color(UIColor(hex:"#ffffff")))
 
                 Text("\(playlist.videoIds.count)개의 영상")
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color(UIColor(hex:"#CECECE")))
             }
 
             Spacer()
