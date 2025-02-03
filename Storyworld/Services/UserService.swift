@@ -28,6 +28,7 @@ class UserService: ObservableObject {
     func createNewUser() {
         let newUser = User(
             id: UUID(),
+            email: "기본값",
             nickname: "Guest", // ✅ 기본 닉네임 설정
             profileImageURL: nil,
             bio: "소개글을 작성하세요",

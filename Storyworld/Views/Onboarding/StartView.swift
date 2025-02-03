@@ -22,6 +22,7 @@ struct StartView: View {
     @State private var imageOffset: CGSize = .zero
     
     var body: some View {
+        
         VStack {
             // ✅ 로고 애니메이션 적용
             HStack {
@@ -65,7 +66,7 @@ struct StartView: View {
                 }
                 .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
                 .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         startDropViewAnimation() // ✅ 화면이 나타날 때 이미지에 애니메이션 적용
                     }
                 }
@@ -98,16 +99,6 @@ struct StartView: View {
         .background(Color(AppColors.mainBgColor))
     }
     
-    // ✅ 전체 애니메이션 실행 후 화면 이동
-    private func startFullSequenceAndNavigate() {
-        startImageAnimation()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            userService.createNewUser()
-            isUserInitialized = true
-        }
-    }
-    
     // ✅ 초기 애니메이션 (이미지와 블러 효과)
     private func startDropViewAnimation() {
         withAnimation(.easeInOut(duration: 0.3)) {
@@ -117,44 +108,6 @@ struct StartView: View {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             UIImpactFeedbackGenerator.trigger(.heavy)
-        }
-    }
-    
-    // ✅ 이미지 전환 애니메이션
-    private func startImageAnimation() {
-        playIcon = "pause.fill"
-        isAnimating = true
-        
-        withAnimation(.easeInOut(duration: 0.3)) {
-            blurOffset = .zero
-            imageOffset = .zero
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            startImageSequenceAnimation()
-        }
-    }
-    
-    let totalDuration: TimeInterval = 3
-    let interval: TimeInterval = 0.1
-    let imageCount = 11
-    
-    // ✅ 이미지 연속 애니메이션
-    private func startImageSequenceAnimation() {
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            UIImpactFeedbackGenerator.trigger(.light)
-            
-            randomImageNumber += 1
-            if randomImageNumber > imageCount {
-                randomImageNumber = 1
-            }
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + totalDuration) {
-            timer?.invalidate()
-            timer = nil
-            isAnimating = false
-            playIcon = "play.fill"
         }
     }
 }
