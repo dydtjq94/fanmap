@@ -8,6 +8,7 @@
 import Foundation
 import FirebaseFirestore // ✅ Firestore 사용을 위한 import 추가!
 import FirebaseAuth
+import FirebaseFunctions
 
 extension VideoGenre {
     static func fromString(_ rawValue: String) -> VideoGenre {
@@ -24,6 +25,8 @@ class CollectionService {
     static let shared = CollectionService()
     private let userService = UserService.shared
     
+    private let functions = Functions.functions()
+    
     init() {
         userService.initializeUserIfNeeded()
     }
@@ -33,16 +36,16 @@ class CollectionService {
             completion(.failure(NSError(domain: "User not found", code: 401, userInfo: nil)))
             return
         }
-
+        
         // ✅ UserDefaults에서 수집된 영상 로드
         let collectedVideoIds = UserDefaults.standard.loadCollectedVideos().map { $0.video.videoId }
-
+        
         let filteredVideos = VideoDummyData.sampleVideos.filter { video in
             video.genre == genre &&
             video.rarity == rarity &&
             !collectedVideoIds.contains(video.videoId)
         }
-
+        
         DispatchQueue.main.async {
             if filteredVideos.isEmpty {
                 completion(.failure(NSError(domain: "No videos found", code: 404, userInfo: nil)))
@@ -51,7 +54,7 @@ class CollectionService {
             }
         }
     }
-
+    
     
     func fetchRandomVideoByGenre(genre: VideoGenre, rarity: VideoRarity, completion: @escaping (Result<Video, Error>) -> Void) {
         let functionURL = "https://getrandomvideobygenre-bgfikxjrua-uc.a.run.app"
@@ -60,19 +63,19 @@ class CollectionService {
             print("Invalid URL")
             return
         }
-
+        
         let task = URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 completion(.failure(error))
                 return
             }
-
+            
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 let statusError = NSError(domain: "HTTPError", code: (response as? HTTPURLResponse)?.statusCode ?? 500, userInfo: nil)
                 completion(.failure(statusError))
                 return
             }
-
+            
             guard let data = data else {
                 let noDataError = NSError(domain: "DataError", code: -1, userInfo: nil)
                 completion(.failure(noDataError))
@@ -96,120 +99,137 @@ class CollectionService {
                 completion(.failure(error))
             }
         }
-
+        
         task.resume()
     }
     
     // 수집된 모든 영상 즉시 반환
     func fetchAllVideos() -> [CollectedVideo] {
         let videos = UserDefaults.standard.loadCollectedVideos()
-            print("🔍 UserDefaults에서 모든 영상 반환, 개수: \(videos.count)")
-            return videos
-        }
+        print("🔍 UserDefaults에서 모든 영상 반환, 개수: \(videos.count)")
+        return videos
+    }
     
-    // 새 영상 추가 및 저장
+    // MARK: - 새 영상 수집 (보상 포함)
     func saveCollectedVideo(_ video: Video) async {
-        var collectedVideos = UserDefaults.standard.loadCollectedVideos()
-
-        if !collectedVideos.contains(where: { $0.video.videoId == video.videoId }) {
-            let newCollectedVideo = CollectedVideo(
-                id: video.videoId,
-                video: video,
-                collectedDate: Date(),
-                tradeStatus: .available,
-                isFavorite: false,
-                ownerId: Auth.auth().currentUser?.uid ?? "unknown"
-            )
-
-            // ✅ 1. UserDefaults 업데이트
-            collectedVideos.append(newCollectedVideo)
-            UserDefaults.standard.saveCollectedVideos(collectedVideos)
-
-            // ✅ 2. Firestore에 저장 (서브컬렉션)
-            let db = Firestore.firestore()
-            let userRef = db.collection("users").document(newCollectedVideo.ownerId)
-            let collectedVideosRef = userRef.collection("collectedVideos").document(video.videoId)
-
-            do {
-                try await collectedVideosRef.setData(from: newCollectedVideo)
-                print("🔥 Firestore에 영상 저장 완료: \(video.title)")
-            } catch {
-                print("❌ Firestore 저장 오류: \(error.localizedDescription)")
-            }
-
-            // ✅ 3. 보상 지급
-            self.userService.rewardUser(for: video)
-
-            print("✅ 영상이 수집되었습니다: \(video.title)")
-        } else {
-            print("⚠️ 이미 존재하는 영상: \(video.videoId)")
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("❌ 현재 로그인된 유저가 없습니다.")
+            return
         }
+        
+        // 1) UserDefaults에서 기존 수집 영상 가져오기
+        var collectedVideos = UserDefaults.standard.loadCollectedVideos()
+        if collectedVideos.contains(where: { $0.video.videoId == video.videoId }) {
+            print("⚠️ 이미 존재하는 영상: \(video.videoId)")
+            return
+        }
+        
+        // 2) 새로운 CollectedVideo 객체 생성
+        let newCollectedVideo = CollectedVideo(
+            id: video.videoId,
+            video: video,
+            collectedDate: Date(),
+            tradeStatus: .available,
+            isFavorite: false,
+            ownerId: uid
+        )
+        
+        // 3) UserDefaults에 즉시 저장(오프라인 데이터)
+        collectedVideos.append(newCollectedVideo)
+        UserDefaults.standard.saveCollectedVideos(collectedVideos)
+        
+        // 4) Cloud Function 호출 (addCollectedVideo)
+        let requestData: [String: Any] = [
+            "videoId": video.videoId,
+            "title": video.title,
+            "rarity": video.rarity.rawValue,
+            "genre": video.genre.rawValue
+            // ownerId는 굳이 보낼 필요 없고, 서버에서 request.auth?.uid 이용 가능
+        ]
+        
+        do {
+            let _ = try await functions.httpsCallable("addCollectedVideo").call(requestData)
+            print("🔥 [CF] Firestore에 영상 저장 성공: \(video.title)")
+        } catch {
+            print("❌ [CF] Firestore 저장 오류: \(error.localizedDescription)")
+        }
+        
+        // 5) 보상 지급 (Swift 쪽 로직 유지)
+        self.userService.rewardUser(for: video)
+        
+        print("✅ 영상 수집 완료 (보상 포함): \(video.title)")
     }
     
+    // MARK: - 새 영상 수집 (보상 없음)
     func saveCollectedVideoWithoutReward(_ video: Video, amount: Int) {
-        guard let currentUser = userService.user else { return }
-
-        let amount: Int = amount
-
-        // ✅ UserDefaults에서 수집된 영상 로드
-        var collectedVideos = UserDefaults.standard.loadCollectedVideos()
-
-        if !collectedVideos.contains(where: { $0.video.videoId == video.videoId }) {
-            let newCollectedVideo = CollectedVideo(
-                id: video.videoId, // ✅ Firestore 문서 ID와 일치
-                video: video,
-                collectedDate: Date(),
-                tradeStatus: .available, // ✅ 거래 가능 상태 기본값 설정
-                isFavorite: false,
-                ownerId: currentUser.id // ✅ 유저 ID 사용
-            )
-
-            // ✅ 1. UserDefaults 업데이트
-            collectedVideos.append(newCollectedVideo)
-            UserDefaults.standard.saveCollectedVideos(collectedVideos)
-
-            // ✅ 2. Firestore에 저장 (서브컬렉션)
-            let db = Firestore.firestore()
-            let userRef = db.collection("users").document(currentUser.id)
-            let collectedVideosRef = userRef.collection("collectedVideos").document(video.videoId)
-
-            Task {
-                do {
-                    try await collectedVideosRef.setData(from: newCollectedVideo) // 🔥 Firestore에 저장
-                    print("🔥 Firestore에 영상 저장 완료: \(video.title)")
-                } catch {
-                    print("❌ Firestore 저장 오류: \(error.localizedDescription)")
-                }
-            }
-
-            // ✅ 3. 경험치 지급 (코인 보상 제외)
-            self.userService.rewardUserWithoutCoins(for: video, amount: amount)
-
-            print("✅ 영상이 수집되었습니다 (코인 보상 없음): \(video.title)")
-        } else {
-            print("⚠️ 이미 존재하는 영상: \(video.videoId)")
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("❌ 현재 로그인된 유저가 없습니다.")
+            return
         }
+        
+        // 1) UserDefaults에서 기존 수집 영상
+        var collectedVideos = UserDefaults.standard.loadCollectedVideos()
+        if collectedVideos.contains(where: { $0.video.videoId == video.videoId }) {
+            print("⚠️ 이미 존재하는 영상: \(video.videoId)")
+            return
+        }
+        
+        // 2) 새로운 CollectedVideo 객체
+        let newCollectedVideo = CollectedVideo(
+            id: video.videoId,
+            video: video,
+            collectedDate: Date(),
+            tradeStatus: .available,
+            isFavorite: false,
+            ownerId: uid
+        )
+        
+        // 3) 로컬 저장
+        collectedVideos.append(newCollectedVideo)
+        UserDefaults.standard.saveCollectedVideos(collectedVideos)
+        
+        // 4) Cloud Function 호출 (addCollectedVideoWithoutReward)
+        let requestData: [String: Any] = [
+            "videoId": video.videoId,
+            "title": video.title,
+            "rarity": video.rarity.rawValue,
+            "genre": video.genre.rawValue
+        ]
+        
+        Task {
+            do {
+                let _ = try await functions.httpsCallable("addCollectedVideoWithoutReward").call(requestData)
+                print("🔥 [CF] Firestore에 영상 저장 완료 (보상X): \(video.title)")
+            } catch {
+                print("❌ [CF] Firestore 저장 오류: \(error.localizedDescription)")
+            }
+        }
+        
+        // 5) 경험치 지급 (코인 보상 제외)
+        self.userService.rewardUserWithoutCoins(for: video, amount: amount)
+        
+        print("✅ 영상이 수집되었습니다 (코인 보상 없음): \(video.title)")
     }
-
     
+    
+    // MARK: - Firestore → UserDefaults 동기화 (읽기)
     func syncCollectedVideosWithFirestore() async {
         guard let currentUser = Auth.auth().currentUser else {
             print("❌ 현재 로그인된 사용자가 없습니다.")
             return
         }
-
+        
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(currentUser.uid)
-
+        
         do {
             let snapshot = try await userRef.collection("collectedVideos").getDocuments()
             let videos = snapshot.documents.compactMap { try? $0.data(as: CollectedVideo.self) }
-
-            // ✅ UserDefaults에 저장
+            
             UserDefaults.standard.saveCollectedVideos(videos)
-            print("✅ Firestore에서 collectedVideos 불러와서 UserDefaults에 저장 완료! (총 \(videos.count)개)")
+            print("✅ Firestore -> UserDefaults 동기화 완료 (총 \(videos.count)개)")
         } catch {
-            print("❌ Firestore에서 collectedVideos 불러오기 실패: \(error.localizedDescription)")
+            print("❌ 동기화 실패: \(error.localizedDescription)")
         }
     }
 }

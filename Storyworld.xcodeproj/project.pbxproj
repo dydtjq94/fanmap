@@ -10,6 +10,7 @@
 		D0A686C02D50643E008ACA44 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D0A686BF2D50643E008ACA44 /* FirebaseAuth */; };
 		D0A686C22D50643E008ACA44 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D0A686C12D50643E008ACA44 /* FirebaseFirestore */; };
 		D0A686C52D5067AE008ACA44 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0A685FE2D505CDC008ACA44 /* GoogleService-Info.plist */; };
+		D0A686C82D50D023008ACA44 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = D0A686C72D50D023008ACA44 /* FirebaseFunctions */; };
 		D0C335F42D2E7BA7003ACD91 /* MapboxMaps in Frameworks */ = {isa = PBXBuildFile; productRef = D0C335F32D2E7BA7003ACD91 /* MapboxMaps */; };
 /* End PBXBuildFile section */
 
@@ -90,6 +91,7 @@
 				D0C335F42D2E7BA7003ACD91 /* MapboxMaps in Frameworks */,
 				D0A686C02D50643E008ACA44 /* FirebaseAuth in Frameworks */,
 				D0A686C22D50643E008ACA44 /* FirebaseFirestore in Frameworks */,
+				D0A686C82D50D023008ACA44 /* FirebaseFunctions in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -157,6 +159,7 @@
 				D0C335F32D2E7BA7003ACD91 /* MapboxMaps */,
 				D0A686BF2D50643E008ACA44 /* FirebaseAuth */,
 				D0A686C12D50643E008ACA44 /* FirebaseFirestore */,
+				D0A686C72D50D023008ACA44 /* FirebaseFunctions */,
 			);
 			productName = Storyworld;
 			productReference = D0C57DD32D3CD5A8004447D3 /* Storyworld.app */;
@@ -727,6 +730,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D0A686BE2D50643E008ACA44 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		D0A686C72D50D023008ACA44 /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D0A686BE2D50643E008ACA44 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
 		};
 		D0C335F32D2E7BA7003ACD91 /* MapboxMaps */ = {
 			isa = XCSwiftPackageProductDependency;
