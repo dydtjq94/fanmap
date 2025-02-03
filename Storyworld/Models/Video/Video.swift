@@ -30,7 +30,6 @@ struct CollectedVideo: Codable, Equatable, Hashable, Identifiable {
     let collectedDate: Date  // 수집 날짜
     var tradeStatus: TradeStatus  // ✅ 거래 상태 추가
     let isFavorite: Bool  // 즐겨찾기 여부
-    let userTags: [String]?  // 사용자가 추가한 태그 리스트
     let ownerId: String  // 소유자 ID
 
     func hash(into hasher: inout Hasher) {

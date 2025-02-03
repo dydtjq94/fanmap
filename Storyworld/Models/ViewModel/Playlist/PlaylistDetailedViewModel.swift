@@ -14,13 +14,8 @@ class PlaylistDetailedViewModel: ObservableObject {
     private let userService = UserService.shared
 
     func loadVideosInPlaylist(for playlist: Playlist) {
-        guard let user = userService.user else {
-            print("⚠️ 유저 정보 없음.")
-            return
-        }
+        let collectedVideos = UserDefaults.standard.loadCollectedVideos() // ✅ UserDefaults에서 직접 가져오기
 
-        let collectedVideos = user.collectedVideos
-        
         let filteredVideos = collectedVideos
             .filter { playlist.videoIds.contains($0.video.videoId) }
             .sorted { $0.collectedDate > $1.collectedDate }
@@ -34,13 +29,8 @@ class PlaylistDetailedViewModel: ObservableObject {
     }
 
     func loadVideosNotInPlaylist(for playlist: Playlist) {
-        guard let user = userService.user else {
-            print("⚠️ 유저 정보 없음.")
-            return
-        }
+        let collectedVideos = UserDefaults.standard.loadCollectedVideos() // ✅ UserDefaults에서 직접 가져오기
 
-        let collectedVideos = user.collectedVideos
-        
         let filteredVideos = collectedVideos
             .filter { !playlist.videoIds.contains($0.video.videoId) }
             .sorted { $0.collectedDate > $1.collectedDate }

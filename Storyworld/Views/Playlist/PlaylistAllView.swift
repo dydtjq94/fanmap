@@ -80,20 +80,15 @@ struct PlaylistAllView: View {
                         showAddPlaylistAlert = false
                     }
                     Button("추가") {
-                        let newPlaylist = Playlist(
-                            id: UUID().uuidString, // ✅ UUID → String 변환
-                            name: newPlaylistName,
-                            description: "설명을 입력하세요",
-                            createdDate: Date(), // ✅ 현재 날짜로 설정
-                            videoIds: [],
-                            thumbnailURL: nil,
-                            defaultThumbnailName: "default_playlist_image1", // ✅ 기본 이미지 이름 설정
-                            ownerId: "default_owner" // ✅ 소유자 ID (필요에 따라 변경)
-                        )
-
-                        PlaylistService.shared.addPlaylist(newPlaylist)
-                        showAddPlaylistAlert = false
-                        sheetManager.presentPlaylistDetail(for: newPlaylist)
+                        Task {
+                            if let newPlaylist = await PlaylistService.shared.createNewPlaylist(name: newPlaylistName) {
+                                DispatchQueue.main.async {
+                                    showAddPlaylistAlert = false
+                                    viewModel.loadPlaylists() // ✅ 최신 데이터 불러오기
+                                    sheetManager.presentPlaylistDetail(for: newPlaylist) // ✅ 디테일 뷰 표시
+                                }
+                            }
+                        }
                     }
                 }
             }

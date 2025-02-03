@@ -29,7 +29,9 @@ struct PlaylistAddVideoView: View {
                                     collectedVideo: video,
                                     isInPlaylist: false,
                                     onAdd: {
-                                        PlaylistService.shared.addVideoToPlaylist(video, to: playlist)
+                                        Task{
+                                            await PlaylistService.shared.addVideoToPlaylist(video, to: playlist)
+                                        }
                                         DispatchQueue.main.async {
                                             playlist.videoIds.append(video.video.videoId)
                                             viewModel.videosNotInPlaylist.removeAll { $0.video.videoId == video.video.videoId }

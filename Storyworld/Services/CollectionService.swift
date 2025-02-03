@@ -9,35 +9,6 @@ import Foundation
 import FirebaseFirestore // ✅ Firestore 사용을 위한 import 추가!
 import FirebaseAuth
 
-extension UserDefaults {
-    private static let collectedVideosKey = "collectedVideos"
-
-    // ✅ 수집된 영상 저장
-    func saveCollectedVideos(_ videos: [CollectedVideo]) {
-        do {
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(videos)
-            self.set(data, forKey: UserDefaults.collectedVideosKey)
-        } catch {
-            print("❌ UserDefaults에 collectedVideos 저장 실패: \(error.localizedDescription)")
-        }
-    }
-
-    // ✅ 수집된 영상 불러오기
-    func loadCollectedVideos() -> [CollectedVideo] {
-        guard let data = self.data(forKey: UserDefaults.collectedVideosKey) else { return [] }
-        do {
-            let decoder = JSONDecoder()
-            return try decoder.decode([CollectedVideo].self, from: data)
-        } catch {
-            print("❌ UserDefaults에서 collectedVideos 불러오기 실패: \(error.localizedDescription)")
-            return []
-        }
-    }
-}
-
-
-
 extension VideoGenre {
     static func fromString(_ rawValue: String) -> VideoGenre {
         return VideoGenre(rawValue: rawValue) ?? .talk // 기본값 설정
@@ -145,7 +116,6 @@ class CollectionService {
                 collectedDate: Date(),
                 tradeStatus: .available,
                 isFavorite: false,
-                userTags: nil,
                 ownerId: Auth.auth().currentUser?.uid ?? "unknown"
             )
 
@@ -186,7 +156,6 @@ class CollectionService {
                 collectedDate: Date(),
                 tradeStatus: .available, // ✅ 거래 가능 상태 기본값 설정
                 isFavorite: false,
-                userTags: nil,
                 ownerId: currentUser.id // ✅ 닉네임 대신 유저 ID 사용
             )
 

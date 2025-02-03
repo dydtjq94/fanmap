@@ -92,7 +92,9 @@ struct PlaylistDetailedView: View {
                                     isInPlaylist: true,
                                     onAdd: {},
                                     onRemove: {
-                                        PlaylistService.shared.removeVideoFromPlaylist(video, playlist: currentPlaylist)
+                                        Task{
+                                         await PlaylistService.shared.removeVideoFromPlaylist(video, playlist: currentPlaylist)
+                                        }
                                         DispatchQueue.main.async {
                                             currentPlaylist.videoIds.removeAll { $0 == video.video.videoId }
                                             viewModel.loadVideosInPlaylist(for: currentPlaylist)
@@ -156,7 +158,9 @@ struct PlaylistDetailedView: View {
                     HStack {
                         Button("취소", role: .cancel) {}
                         Button("삭제", role: .destructive) {
-                            PlaylistService.shared.removePlaylist(currentPlaylist.id)
+                            Task {
+                             await   PlaylistService.shared.removePlaylist(currentPlaylist.id)
+                            }
                             sheetManager.dismissPlaylistDetail()
                         }
                     }
@@ -169,11 +173,13 @@ struct PlaylistDetailedView: View {
         .alert("플레이리스트 이름 변경", isPresented: $showTitleAlert) {
             TextField("새 이름", text: $updatedTitle)
             Button("저장") {
-                PlaylistService.shared.updatePlaylistDetails(
-                    id: currentPlaylist.id,
-                    newName: updatedTitle,
-                    newDescription: nil
-                )
+                Task {
+                 await   PlaylistService.shared.updatePlaylistDetails(
+                        id: currentPlaylist.id,
+                        newName: updatedTitle,
+                        newDescription: nil
+                    )
+                }
                 currentPlaylist.name = updatedTitle
             }
             Button("취소", role: .cancel) {}
@@ -181,11 +187,13 @@ struct PlaylistDetailedView: View {
         .alert("플레이리스트 설명 변경", isPresented: $showDescriptionAlert) {
             TextField("새 설명", text: $updatedDescription)
             Button("저장") {
-                PlaylistService.shared.updatePlaylistDetails(
-                    id: currentPlaylist.id,
-                    newName: nil,
-                    newDescription: updatedDescription
-                )
+                Task{
+                    await PlaylistService.shared.updatePlaylistDetails(
+                        id: currentPlaylist.id,
+                        newName: nil,
+                        newDescription: updatedDescription
+                    )
+                }
                 currentPlaylist.description = updatedDescription
             }
             Button("취소", role: .cancel) {}

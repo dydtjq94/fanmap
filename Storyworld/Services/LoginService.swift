@@ -94,6 +94,9 @@ class LoginService: ObservableObject {
 
         // ✅ Firestore → UserDefaults로 collectedVideos 동기화
         await CollectionService.shared.syncCollectedVideosWithFirestore()
+        
+        // ✅ Firestore → UserDefaults로 `playlists` 동기화 (새로 추가)
+        await PlaylistService.shared.syncPlaylistsWithFirestore()
 
         DispatchQueue.main.async {
             self.isUserInitialized = true
