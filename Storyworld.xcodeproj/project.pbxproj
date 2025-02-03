@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D0A686C02D50643E008ACA44 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D0A686BF2D50643E008ACA44 /* FirebaseAuth */; };
+		D0A686C22D50643E008ACA44 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D0A686C12D50643E008ACA44 /* FirebaseFirestore */; };
 		D0C335F42D2E7BA7003ACD91 /* MapboxMaps in Frameworks */ = {isa = PBXBuildFile; productRef = D0C335F32D2E7BA7003ACD91 /* MapboxMaps */; };
 /* End PBXBuildFile section */
 
@@ -85,6 +87,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				D0C335F42D2E7BA7003ACD91 /* MapboxMaps in Frameworks */,
+				D0A686C02D50643E008ACA44 /* FirebaseAuth in Frameworks */,
+				D0A686C22D50643E008ACA44 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,6 +154,8 @@
 			name = Storyworld;
 			packageProductDependencies = (
 				D0C335F32D2E7BA7003ACD91 /* MapboxMaps */,
+				D0A686BF2D50643E008ACA44 /* FirebaseAuth */,
+				D0A686C12D50643E008ACA44 /* FirebaseFirestore */,
 			);
 			productName = Storyworld;
 			productReference = D0C57DD32D3CD5A8004447D3 /* Storyworld.app */;
@@ -234,6 +240,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				D0C335F22D2E7BA7003ACD91 /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */,
+				D0A686BE2D50643E008ACA44 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D0C335BC2D2E7B90003ACD91;
@@ -688,6 +695,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		D0A686BE2D50643E008ACA44 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.7.0;
+			};
+		};
 		D0C335F22D2E7BA7003ACD91 /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/mapbox/mapbox-maps-ios.git";
@@ -699,6 +714,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		D0A686BF2D50643E008ACA44 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D0A686BE2D50643E008ACA44 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		D0A686C12D50643E008ACA44 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D0A686BE2D50643E008ACA44 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
 		D0C335F32D2E7BA7003ACD91 /* MapboxMaps */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D0C335F22D2E7BA7003ACD91 /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */;
