@@ -42,6 +42,7 @@
 /* Begin PBXFileReference section */
 		D091F94B2D449DAF00CDACFE /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		D091F9ED2D44A64800CDACFE /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		D0A685FE2D505CDC008ACA44 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		D0C57DD32D3CD5A8004447D3 /* Storyworld.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Storyworld.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C57DD42D3CD5A8004447D3 /* StoryworldTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StoryworldTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C57DD52D3CD5A8004447D3 /* StoryworldUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StoryworldUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -121,6 +122,7 @@
 				D0C57DD42D3CD5A8004447D3 /* StoryworldTests.xctest */,
 				D0C57DD52D3CD5A8004447D3 /* StoryworldUITests.xctest */,
 				D091F94B2D449DAF00CDACFE /* Config.xcconfig */,
+				D0A685FE2D505CDC008ACA44 /* GoogleService-Info.plist */,
 				D091F9ED2D44A64800CDACFE /* .gitignore */,
 				D0A683C92D4BB5E2008ACA44 /* Frameworks */,
 			);
