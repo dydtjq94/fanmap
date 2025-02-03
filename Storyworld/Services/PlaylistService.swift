@@ -34,16 +34,16 @@ class PlaylistService {
         savePlaylists(playlists)
     }
 
-    func removePlaylist(_ id: UUID) {
+    func removePlaylist(_ id: String) { // ✅ UUID → String 변경
         var playlists = loadPlaylists()
-        playlists.removeAll { $0.id == id }
+        playlists.removeAll { $0.id == id } // ✅ 비교 타입 일치
         savePlaylists(playlists)
     }
     
     func removeVideoFromPlaylist(_ video: CollectedVideo, playlist: Playlist) {
         var playlists = loadPlaylists()
         if let index = playlists.firstIndex(where: { $0.id == playlist.id }) {
-            playlists[index].videoIds.removeAll { $0 == video.video.videoId }
+            playlists[index].videoIds.removeAll { $0 == video.id } // ✅ video.video.videoId → video.id 변경
             UIImpactFeedbackGenerator.trigger(.heavy)
             savePlaylists(playlists)
 
@@ -67,9 +67,9 @@ class PlaylistService {
         }
     }
     
-    func updatePlaylistDetails(id: UUID, newName: String?, newDescription: String?) {
+    func updatePlaylistDetails(id: String, newName: String?, newDescription: String?) { // ✅ UUID → String 변경
         var playlists = loadPlaylists()
-        if let index = playlists.firstIndex(where: { $0.id == id }) {
+        if let index = playlists.firstIndex(where: { $0.id == id }) { // ✅ 비교 타입 일치
             if let newName = newName {
                 playlists[index].name = newName
             }
@@ -77,9 +77,9 @@ class PlaylistService {
                 playlists[index].description = newDescription
             }
             savePlaylists(playlists)
-            
+
             print("✅ 플레이리스트 업데이트됨: \(playlists[index].name), \(playlists[index].description ?? "설명 없음")")
-            
+
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .playlistUpdated, object: nil)
             }

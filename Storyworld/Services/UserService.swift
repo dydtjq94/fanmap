@@ -25,25 +25,6 @@ class UserService: ObservableObject {
         }
     }
     
-    func createNewUser() {
-        let newUser = User(
-            id: UUID(),
-            email: "기본값",
-            nickname: "Guest", // ✅ 기본 닉네임 설정
-            profileImageURL: nil,
-            bio: "소개글을 작성하세요",
-            experience: 0,
-            balance: 5000,
-            gems: 0,
-            collectedVideos: [],
-            playlists: []
-        )
-        saveUser(newUser) // ✅ 유저 정보를 저장
-        DispatchQueue.main.async {
-            self.user = newUser
-        }
-    }
-    
     private func loadUser() -> User? {
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
             do {
@@ -90,8 +71,6 @@ class UserService: ObservableObject {
         print("🏆 새로운 레벨: \(newLevel)")
         
         // 변경된 사용자 정보를 즉시 저장
-        
-        print("새로운 유저 정보: \(user)")
         self.saveUser(user)
     }
     
@@ -115,8 +94,6 @@ class UserService: ObservableObject {
         print("🏆 새로운 레벨: \(newLevel)")
         
         // 변경된 사용자 정보를 즉시 저장
-        
-        print("새로운 유저 정보: \(user)")
         self.saveUser(user)
     }
     

@@ -8,7 +8,7 @@
 import Foundation
 
 struct User: Codable, Equatable {
-    var id: UUID
+    var id: String
     var email: String
     var nickname: String
     var profileImageURL: String?

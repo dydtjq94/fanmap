@@ -272,7 +272,9 @@ final class DropController: UIViewController {
                 switch result {
                 case .success(let video):
                     self.selectedVideo = video
-                    CollectionService.shared.saveCollectedVideo(video)
+                    Task {
+                        await CollectionService.shared.saveCollectedVideo(video) // ✅ `Task` 내부에서 `await` 사용
+                    }
                     completion(video)
                 case .failure(let error):
                     print("Error fetching video: \(error.localizedDescription)")

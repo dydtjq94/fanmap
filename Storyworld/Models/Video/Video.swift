@@ -18,32 +18,37 @@ struct Video: Codable, Equatable, Hashable {
     var rarity: VideoRarity
 }
 
-// 사용자가 수집한 영상을 위한 별도 모델
+enum TradeStatus: String, Codable {
+    case available = "available"  // 거래 가능
+    case pending = "pending"  // 거래 진행 중
+    case notTradable = "not_tradable"  // 거래 불가능
+}
+
 struct CollectedVideo: Codable, Equatable, Hashable, Identifiable {
-    var id: String { video.videoId }  // Identifiable 프로토콜 준수를 위해 videoId 사용
-    let video: Video  // 원본 영상 참조
+    var id: String  // Firestore 문서 ID (videoId 사용 X)
+    let video: Video  // 원본 영상 정보
     let collectedDate: Date  // 수집 날짜
-    var playlistIds: [UUID]  // 플레이리스트 ID 리스트
+    var tradeStatus: TradeStatus  // ✅ 거래 상태 추가
     let isFavorite: Bool  // 즐겨찾기 여부
     let userTags: [String]?  // 사용자가 추가한 태그 리스트
-    let ownerId: String  // 소유자 ID (예: 사용자 고유 ID)
+    let ownerId: String  // 소유자 ID
 
     func hash(into hasher: inout Hasher) {
-        hasher.combine(video.videoId)
+        hasher.combine(id)
     }
 }
 
-// 플레이리스트 모델
+// 플레이리스트 모델 (Firestore 문서 ID 사용)
 struct Playlist: Codable, Equatable, Hashable, Identifiable {
-    var id: UUID  // 고유 식별자
-    var name: String  // 플레이리스트 이름
-    var description: String?  // 설명
-    var createdDate: Date  // 생성 날짜
-    var videoIds: [String]  // 포함된 영상의 ID 목록
-    var thumbnailURL: String?  // 클라우드 URL (사용자가 변경 시 업데이트)
-    var defaultThumbnailName: String  // 기본 이미지 (내장 이미지 이름)
-    let ownerId: String  // 소유자 ID
-    
+    var id: String  // ✅ UUID → String 변경
+    var name: String
+    var description: String?
+    var createdDate: Date
+    var videoIds: [String]  // ✅ 누락된 videoIds 추가
+    var thumbnailURL: String?
+    var defaultThumbnailName: String
+    let ownerId: String
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
