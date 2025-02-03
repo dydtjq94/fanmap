@@ -8,7 +8,7 @@
 import Foundation
 
 struct User: Codable, Equatable {
-//    var id: UUID
+    var id: UUID
     var nickname: String  // 닉네임
     var profileImageURL: String?  // 프로필 이미지 URL (옵션)
     var bio: String?  // 소개글

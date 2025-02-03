@@ -24,10 +24,10 @@ class UserService: ObservableObject {
             }
         }
     }
-    //
     
     func createNewUser() {
         let newUser = User(
+            id: UUID(),
             nickname: "Guest", // ✅ 기본 닉네임 설정
             profileImageURL: nil,
             bio: "소개글을 작성하세요",
