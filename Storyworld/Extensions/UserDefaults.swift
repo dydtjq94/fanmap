@@ -9,57 +9,53 @@ import Foundation
 import CoreLocation
 
 extension UserDefaults {
-    private enum Keys {
-        static let currentUser = "currentUser"
-        static let collectedVideos = "collectedVideos"
-        static let playlists = "playlists"
-    }
+    private static let playlistsKey = "playlists"
 
-    // ✅ 유저 정보 저장
-    func saveUser(_ user: User) {
-        if let encoded = try? JSONEncoder().encode(user) {
-            set(encoded, forKey: Keys.currentUser)
-        }
-    }
-
-    // ✅ 저장된 유저 정보 불러오기
-    func loadUser() -> User? {
-        guard let savedData = data(forKey: Keys.currentUser),
-              let decodedUser = try? JSONDecoder().decode(User.self, from: savedData) else {
-            return nil
-        }
-        return decodedUser
-    }
-
-    // ✅ Collected Videos 저장
-    func saveCollectedVideos(_ videos: [CollectedVideo]) {
-        if let encoded = try? JSONEncoder().encode(videos) {
-            set(encoded, forKey: Keys.collectedVideos)
-        }
-    }
-
-    // ✅ Collected Videos 불러오기
-    func loadCollectedVideos() -> [CollectedVideo] {
-        guard let savedData = data(forKey: Keys.collectedVideos),
-              let decodedVideos = try? JSONDecoder().decode([CollectedVideo].self, from: savedData) else {
-            return []
-        }
-        return decodedVideos
-    }
-
-    // ✅ Playlists 저장
+    // ✅ 플레이리스트 저장
     func savePlaylists(_ playlists: [Playlist]) {
-        if let encoded = try? JSONEncoder().encode(playlists) {
-            set(encoded, forKey: Keys.playlists)
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(playlists)
+            self.set(data, forKey: UserDefaults.playlistsKey)
+        } catch {
+            print("❌ UserDefaults에 playlists 저장 실패: \(error.localizedDescription)")
         }
     }
 
-    // ✅ Playlists 불러오기
+    // ✅ 플레이리스트 불러오기
     func loadPlaylists() -> [Playlist] {
-        guard let savedData = data(forKey: Keys.playlists),
-              let decodedPlaylists = try? JSONDecoder().decode([Playlist].self, from: savedData) else {
+        guard let data = self.data(forKey: UserDefaults.playlistsKey) else { return [] }
+        do {
+            let decoder = JSONDecoder()
+            return try decoder.decode([Playlist].self, from: data)
+        } catch {
+            print("❌ UserDefaults에서 playlists 불러오기 실패: \(error.localizedDescription)")
             return []
         }
-        return decodedPlaylists
+    }
+    
+    private static let collectedVideosKey = "collectedVideos"
+
+    // ✅ 수집된 영상 저장
+    func saveCollectedVideos(_ videos: [CollectedVideo]) {
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(videos)
+            self.set(data, forKey: UserDefaults.collectedVideosKey)
+        } catch {
+            print("❌ UserDefaults에 collectedVideos 저장 실패: \(error.localizedDescription)")
+        }
+    }
+
+    // ✅ 수집된 영상 불러오기
+    func loadCollectedVideos() -> [CollectedVideo] {
+        guard let data = self.data(forKey: UserDefaults.collectedVideosKey) else { return [] }
+        do {
+            let decoder = JSONDecoder()
+            return try decoder.decode([CollectedVideo].self, from: data)
+        } catch {
+            print("❌ UserDefaults에서 collectedVideos 불러오기 실패: \(error.localizedDescription)")
+            return []
+        }
     }
 }

@@ -207,7 +207,7 @@ struct DropWithCoinView: View {
             imageOffset = .zero
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            let success = UserService.shared.deductCoins(amount: dropPrice)
+            let success = UserService.shared.canAffordCoins(amount: dropPrice)
             if success {
                 isButtonDisabled = true // 버튼 비활성화
                 startImageAnimation()
@@ -277,7 +277,6 @@ struct DropWithCoinView: View {
         isAnimating = false
         showDropResultView = true
     }
-    
 }
 
 

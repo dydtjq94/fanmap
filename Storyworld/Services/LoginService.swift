@@ -9,7 +9,6 @@ import SwiftUI
 import AuthenticationServices
 import FirebaseAuth
 import FirebaseFirestore
-import FirebaseFunctions
 import CryptoKit
 
 class LoginService: ObservableObject {
@@ -41,7 +40,7 @@ class LoginService: ObservableObject {
         }
     }
     
-    // MARK: - Apple 로그인 후 Firebase Auth 연동 (async)
+    // ✅ Apple 로그인 후 Firebase Auth 연동 (async 적용)
     private func signInWithApple(credential: ASAuthorizationAppleIDCredential) async {
         guard let nonce = currentNonce, let appleIDToken = credential.identityToken else {
             print("❌ Invalid login request.")
@@ -59,54 +58,50 @@ class LoginService: ObservableObject {
             let authResult = try await Auth.auth().signIn(with: firebaseCredential)
             let user = authResult.user
             let uid = user.uid
-            let email = user.email ?? "unknown@apple.com" // Apple 로그인 시 이메일이 없을 수도 있음
+            let email = user.email ?? "unknown@apple.com" // ✅ Apple 로그인 시 이메일이 없을 수도 있음
             let nickname = credential.fullName?.givenName ?? "User \(Int.random(in: 1000...9999))"
-            
-            // 로그인 성공 후, 클라우드 펑션으로 유저 생성
+
             await handleLoginSuccess(uid: uid, email: email, nickname: nickname)
         } catch {
             print("❌ Firebase Apple 로그인 실패: \(error.localizedDescription)")
         }
     }
     
-    // LoginService.swift (간소화 예시)
+    // ✅ 로그인 성공 후 Firestore → UserDefaults 저장 (async 적용)
     private func handleLoginSuccess(uid: String, email: String, nickname: String) async {
-        let functions = Functions.functions()
+        if let existingUser = await fetchUserData(uid: uid) {
+            // ✅ 기존 유저: UserDefaults 업데이트
+            print("✅ 기존 유저 Firestore에서 불러옴: \(existingUser.nickname)")
+            userService.saveUser(existingUser)
+        } else {
+            // ✅ 신규 유저 생성 후 저장
+            print("🆕 신규 유저 생성 및 저장")
+            let newUser = User(
+                id: uid,
+                email: email,
+                nickname: nickname,
+                profileImageURL: nil,
+                bio: "소개글을 작성하세요",
+                experience: 0,
+                balance: 1000,
+                gems: 0
+            )
+            await saveUserToFirestore(uid: uid, userData: newUser)
+            userService.saveUser(newUser)
+        }
 
-        do {
-            // Cloud Function 'createUserProfile'로 신규 가입 처리
-            let result = try await functions.httpsCallable("createUserProfile").call([
-                "email": email,
-                "nickname": nickname
-            ])
-            if let data = result.data as? [String: Any],
-               let success = data["success"] as? Bool, success {
-                // 🔥 성공적으로 Firestore에 새 유저 생성
-                print("🔥 Cloud Function에서 유저 생성 완료: \(nickname)")
+        // ✅ Firestore → UserDefaults로 collectedVideos 동기화
+        await CollectionService.shared.syncCollectedVideosWithFirestore()
+        
+        // ✅ Firestore → UserDefaults로 `playlists` 동기화 (새로 추가)
+        await PlaylistService.shared.syncPlaylistsWithFirestore()
 
-                // ✅ 이제 UserService에 저장 (로컬)
-                let user = User(
-                    id: uid,
-                    email: email,
-                    nickname: nickname,
-                    profileImageURL: nil,
-                    bio: "소개글을 작성하세요",
-                    experience: 0,
-                    balance: 1000,
-                    gems: 0
-                )
-                UserService.shared.saveUser(user)
-
-                DispatchQueue.main.async {
-                    self.isUserInitialized = true
-                }
-            }
-        } catch {
-            print("❌ Cloud Function 호출 오류: \(error.localizedDescription)")
+        DispatchQueue.main.async {
+            self.isUserInitialized = true
         }
     }
     
-    // MARK: - Firestore에서 유저 정보 가져오기 (직접 읽기)
+    // ✅ Firestore에서 유저 정보 가져오기 (async 적용)
     func fetchUserData(uid: String) async -> User? {
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(uid)
@@ -114,7 +109,7 @@ class LoginService: ObservableObject {
         do {
             let userSnapshot = try await userRef.getDocument()
             guard let userData = userSnapshot.data() else { return nil }
-            
+
             let user = User(
                 id: uid,
                 email: userData["email"] as? String ?? "",
@@ -125,27 +120,27 @@ class LoginService: ObservableObject {
                 balance: userData["balance"] as? Int ?? 0,
                 gems: userData["gems"] as? Int ?? 0
             )
-            
-            // 서브컬렉션도 함께 가져오고 UserDefaults에 저장
+
+            // ✅ Firestore에서 collectedVideos & playlists 가져와서 UserDefaults에 저장
             async let collectedVideos = fetchCollectedVideos(userRef: userRef)
             async let playlists = fetchPlaylists(userRef: userRef)
-            
+
             let userCollectedVideos = await collectedVideos
             let userPlaylists = await playlists
-            
-            UserDefaults.standard.saveCollectedVideos(userCollectedVideos)
-            UserDefaults.standard.savePlaylists(userPlaylists)
-            
+
+            UserDefaults.standard.saveCollectedVideos(userCollectedVideos) // ✅ UserDefaults에 저장
+            UserDefaults.standard.savePlaylists(userPlaylists) // ✅ UserDefaults에 저장
+
             return user
-            
+
         } catch {
             print("❌ Firestore에서 유저 데이터 불러오기 실패: \(error.localizedDescription)")
             return nil
         }
     }
+
     
-    
-    // MARK: - Firestore에서 서브컬렉션 가져오기
+    // ✅ Firestore에서 `collectedVideos` 서브컬렉션 가져오기
     private func fetchCollectedVideos(userRef: DocumentReference) async -> [CollectedVideo] {
         do {
             let snapshot = try await userRef.collection("collectedVideos").getDocuments()
@@ -155,7 +150,8 @@ class LoginService: ObservableObject {
             return []
         }
     }
-    
+
+    // ✅ Firestore에서 `playlists` 서브컬렉션 가져오기
     private func fetchPlaylists(userRef: DocumentReference) async -> [Playlist] {
         do {
             let snapshot = try await userRef.collection("playlists").getDocuments()
@@ -163,6 +159,31 @@ class LoginService: ObservableObject {
         } catch {
             print("❌ playlists 불러오기 실패: \(error.localizedDescription)")
             return []
+        }
+    }
+    
+    private func saveUserToFirestore(uid: String, userData: User) async {
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(uid)
+
+        let userDataToSave: [String: Any] = [
+            "id": uid,
+            "email": userData.email,
+            "nickname": userData.nickname,
+            "profileImageURL": userData.profileImageURL ?? "",
+            "bio": userData.bio,
+            "experience": userData.experience,
+            "balance": userData.balance,
+            "gems": userData.gems
+        ]
+
+        do {
+            // ✅ 1. 유저 문서 먼저 저장
+            try await userRef.setData(userDataToSave)
+            print("🔥 Firestore에 새로운 유저 저장 완료! ID: \(uid)")
+            
+        } catch {
+            print("❌ Firestore 저장 오류: \(error.localizedDescription)")
         }
     }
     
@@ -186,14 +207,14 @@ class LoginService: ObservableObject {
         let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
         var result = ""
         var remainingLength = length
-        
+
         while remainingLength > 0 {
             let randoms: [UInt8] = (0..<16).map { _ in
                 var random: UInt8 = 0
                 _ = SecRandomCopyBytes(kSecRandomDefault, 1, &random)
                 return random
             }
-            
+
             randoms.forEach { byte in
                 if remainingLength == 0 { return }
                 if byte < charset.count {
@@ -204,30 +225,30 @@ class LoginService: ObservableObject {
         }
         return result
     }
-    
+
     private func sha256(_ input: String) -> String {
         let inputData = Data(input.utf8)
         let hashedData = SHA256.hash(data: inputData)
         return hashedData.map { String(format: "%02x", $0) }.joined()
     }
     
-    // MARK: - Firestore 데이터 동기화
     func waitForDataSync() async {
+        // ✅ Firestore 데이터 동기화 (비동기 작업이므로 Task.sleep 사용)
         do {
             print("🕒 Firestore 데이터 동기화 중...")
             
-            // 1. Firestore에서 collectedVideos 가져오기
+            // ✅ 1. Firestore에서 collectedVideos 가져오기
             await CollectionService.shared.syncCollectedVideosWithFirestore()
             
-            // 2. Firestore에서 playlists 가져오기
+            // ✅ 2. Firestore에서 playlists 가져오기
             await PlaylistService.shared.syncPlaylistsWithFirestore()
-            
-            // 데이터가 다 불러와질 때까지 0.5초 대기
+
+            // ✅ 데이터가 다 불러와질 때까지 0.5초 대기
             try await Task.sleep(nanoseconds: 500_000_000) // 0.5초 대기
             print("✅ Firestore 데이터 동기화 완료!")
         } catch {
             print("❌ Firestore 데이터 동기화 중 오류 발생: \(error.localizedDescription)")
         }
     }
-    
+
 }

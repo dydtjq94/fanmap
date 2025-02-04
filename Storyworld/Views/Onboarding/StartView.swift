@@ -84,6 +84,7 @@ struct StartView: View {
                 SignInWithAppleButton(
                     .signIn,
                     onRequest: { request in
+                        UIImpactFeedbackGenerator.trigger(.heavy) // ✅ 버튼 클릭 시 햅틱 피드백 추가
                         isLoading = true // ✅ 로그인 시작
                         loginService.handleAppleSignInRequest(request)
                     },
