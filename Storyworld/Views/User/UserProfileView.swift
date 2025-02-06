@@ -6,36 +6,96 @@
 //
 
 import SwiftUI
+import PhotosUI
+import AVFoundation
+import Photos
 
 struct UserProfileView: View {
     @EnvironmentObject var userService: UserService
+    
     @State private var isEditingNickname = false
     @State private var isEditingBio = false
     @State private var editedNickname = ""
     @State private var editedBio = ""
     
+    @State private var isShowingImagePicker = false
+    @State private var isShowingActionSheet = false
+    @State private var selectedImage: UIImage?
+    @State private var selectedSourceType: UIImagePickerController.SourceType = .photoLibrary
+    
+    // ✅ 업로드 중인지 표시하는 변수
+    @State private var isUploadingProfileImage = false
+    
+    @State private var profileImage: UIImage? = nil
+
     var body: some View {
         if let user = userService.user {
             HStack(alignment: .center, spacing: 16) {
-                // 프로필 이미지 (URL이 없으면 기본 이미지 표시)
-                if let profileURL = user.profileImageURL, let url = URL(string: profileURL) {
-                    AsyncImage(url: url) { image in
-                        image.resizable()
-                            .scaledToFill()
-                            .frame(width: 80, height: 80)
-                            .clipShape(Circle())
-                            .shadow(radius: 5)
-                    } placeholder: {
-                        ProgressView()
+                
+                // 프로필 이미지 & 로딩 표시 ZStack
+                ZStack {
+                    // 원래 버튼
+                    Button(action: {
+                        UIImpactFeedbackGenerator.trigger(.light)
+                        isShowingActionSheet = true
+                    }) {
+                        if let image = profileImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 80, height: 80)
+                                .clipShape(Circle())
+                                .shadow(radius: 5)
+                        } else {
+                            Image("default_user_image1")
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 80, height: 80)
+                                .clipShape(Circle())
+                                .shadow(radius: 5)
+                        }
                     }
-                } else {
-                    Image("default_user_image1")  // 기본 이미지 적용
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 80, height: 80)
-                        .clipShape(Circle())
-                        .shadow(radius: 5)
+                    .actionSheet(isPresented: $isShowingActionSheet) {
+                        ActionSheet(
+                            title: Text("프로필 사진 변경"),
+                            message: nil,
+                            buttons: [
+                                .default(Text("사진 선택")) {
+                                    checkPermission(for: .photoLibrary) { granted in
+                                        if granted {
+                                            selectedSourceType = .photoLibrary
+                                            isShowingImagePicker = true
+                                        } else {
+                                            print("❌ Photo Library 권한 거부됨")
+                                        }
+                                    }
+                                },
+                                .default(Text("카메라 촬영")) {
+                                    checkPermission(for: .camera) { granted in
+                                        if granted {
+                                            selectedSourceType = .camera
+                                            isShowingImagePicker = true
+                                        } else {
+                                            print("❌ Camera 권한 거부됨")
+                                        }
+                                    }
+                                },
+                                .cancel()
+                            ]
+                        )
+                    }
+                    
+                    // ✅ 업로드 중이면, Circle 위에 로딩 아이콘 표시
+                    if isUploadingProfileImage {
+                        Circle()
+                            .frame(width: 80, height: 80)
+                            .foregroundColor(.black.opacity(0.3))
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    }
                 }
+                
+                // 나머지 UI (닉네임, 배지 등)
                 VStack(alignment: .leading) {
                     // 닉네임 수정 버튼
                     Button(action: {
@@ -49,10 +109,9 @@ struct UserProfileView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(.bottom, 2)
-                    
-                    
+
+                    // 기존 Badge UI
                     HStack(spacing: 8) {
-                        // 레벨 섹션
                         HStack(spacing: 2) {
                             Image(systemName: "arrow.up.square.fill")
                                 .foregroundColor(Color(AppColors.mainColor))
@@ -63,7 +122,6 @@ struct UserProfileView: View {
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                         }
                         
-                        // 수집한 영상 수 섹션
                         HStack(spacing: 2) {
                             Image(systemName: "film.stack.fill")
                                 .foregroundColor(Color(AppColors.green1))
@@ -104,16 +162,16 @@ struct UserProfileView: View {
                     }) {
                         Text(userService.user?.bio?.isEmpty == false ? userService.user!.bio! : "소개글을 입력하세요")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(userService.user?.bio?.isEmpty == false ? .gray : .gray)
+                            .foregroundColor(.gray)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
             }
+            // 닉네임 수정 Alert
             .alert("닉네임 수정", isPresented: $isEditingNickname) {
                 VStack {
                     TextField("닉네임을 입력하세요", text: $editedNickname)
                         .onChange(of: editedNickname) {
-                            // 최대 길이 제한 (모든 문자 포함 12글자)
                             if editedNickname.count > 12 {
                                 editedNickname = String(editedNickname.prefix(12))
                             }
@@ -133,25 +191,42 @@ struct UserProfileView: View {
                     }
                 }
             }
-            .alert("소개글 수정", isPresented: $isEditingBio) {
-                TextField("소개글을 입력하세요", text: $editedBio)
-                Button("취소", role: .cancel) {}
-                Button("저장") {
-                    if var user = userService.user {
-                        user.bio = editedBio
-                        userService.saveUser(user)
-                    }
+            // 이미지 피커
+            .sheet(isPresented: $isShowingImagePicker, onDismiss: handleImageSelection) {
+                ImagePickerManager(image: $selectedImage, sourceType: selectedSourceType)
+            }
+            // 프로필 이미지 로드
+            .onAppear {
+                userService.loadProfileImage { image in
+                    self.profileImage = image
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-            .background(Color(UIColor(hex: "#1D1D1D")))
-            .cornerRadius(16)
-            .shadow(radius: 10)
+            .onChange(of: userService.user?.profileImageURL) { _ in
+                userService.loadProfileImage { image in
+                    self.profileImage = image
+                }
+            }
         } else {
             ProgressView("Loading user data...")
                 .padding()
         }
+    }
+    
+    // 이미지 선택 후 업로드 로직
+    private func handleImageSelection() {
+        guard let selectedImage = selectedImage else { return }
         
+        // ✅ 업로드 시작
+        isUploadingProfileImage = true
+        
+        // Firebase Storage 업로드 → Firestore 업데이트
+        userService.uploadProfileImage(selectedImage) { url in
+            // 업로드 끝
+            isUploadingProfileImage = false
+            
+            if let url = url {
+                userService.updateProfileImageURL(imageURL: url)
+            }
+        }
     }
 }

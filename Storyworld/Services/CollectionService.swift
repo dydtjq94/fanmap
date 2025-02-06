@@ -212,4 +212,40 @@ class CollectionService {
             print("❌ Firestore에서 collectedVideos 불러오기 실패: \(error.localizedDescription)")
         }
     }
+    
+    func sellCollectedVideo(_ video: Video, coinAmount: Int, completion: @escaping (Bool) -> Void) {
+        guard let currentUser = userService.user else {
+            print("❌ 유저 정보 없음")
+            completion(false)
+            return
+        }
+        
+        // ✅ 1. UserDefaults에서 영상 삭제
+        var collectedVideos = UserDefaults.standard.loadCollectedVideos()
+        collectedVideos.removeAll { $0.video.videoId == video.videoId }
+        UserDefaults.standard.saveCollectedVideos(collectedVideos)
+
+        // ✅ 2. Firestore에서 영상 삭제
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(currentUser.id)
+        let collectedVideosRef = userRef.collection("collectedVideos").document(video.videoId)
+
+        Task {
+            do {
+                try await collectedVideosRef.delete()
+                print("🔥 Firestore에서 영상 삭제 완료: \(video.title)")
+            } catch {
+                print("❌ Firestore 영상 삭제 오류: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+            
+            // ✅ 3. 코인 지급 (이제 외부에서 전달받은 `coinAmount` 사용)
+             userService.addCoins(amount: coinAmount)
+             print("✅ \(coinAmount) 코인 지급 완료!")
+
+            completion(true)
+        }
+    }
+
 }

@@ -16,31 +16,26 @@ import UIKit
 
 struct MapTabUserProfileView: View {
     @EnvironmentObject var userService: UserService
+    @State private var profileImage: UIImage? = nil
     
     var body: some View {
         HStack{
             Spacer() // 왼쪽 공간을 채워서 오른쪽 정렬
             HStack{
                 HStack(spacing: 6){
-                    if let profileURL = userService.user?.profileImageURL, let url = URL(string: profileURL) {
-                        AsyncImage(url: url) { image in
-                            image.resizable()
-                                .scaledToFill()
-                                .frame(width: 16, height: 16)
-                                .clipShape(Circle())
-                        } placeholder: {
-                            Image(systemName: "person.crop.circle.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 16, height: 16)
-                                .foregroundColor(.gray)
-                        }
+                    // ✅ 로컬에서 캐싱된 이미지 먼저 표시
+                    if let image = profileImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 20, height: 20)
+                            .clipShape(Circle())
                     } else {
-                        Image("default_user_image1")
+                        Image(systemName: "person.crop.circle.fill")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 16, height: 16)
-                            .clipShape(Circle())
+                            .frame(width: 20, height: 20)
+                            .foregroundColor(.gray)
                     }
                     
                     Text(userService.user?.nickname ?? "Guest")
@@ -83,6 +78,16 @@ struct MapTabUserProfileView: View {
             .cornerRadius(12)
             .padding(.horizontal, 16)
             .padding(.top, 4)
+        }
+        .onAppear {
+            userService.loadProfileImage { image in
+                self.profileImage = image
+            }
+        }
+        .onChange(of: userService.user?.profileImageURL) { _ in
+            userService.loadProfileImage { image in
+                self.profileImage = image
+            }
         }
     }
 }

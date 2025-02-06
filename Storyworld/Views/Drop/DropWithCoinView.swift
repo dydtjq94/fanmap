@@ -151,7 +151,7 @@ struct DropWithCoinView: View {
         }
         .fullScreenCover(isPresented: $showDropResultView) {
             if let video = selectedVideo {
-                DropResultWithCoinView(
+                DropResultView(
                     video: video,
                     closeAction: {
                         showDropResultView = false

@@ -31,51 +31,30 @@ struct StartView: View {
                 
                 Image("logo_korean")
                     .resizable()
-                    .frame(width: 100, height:28)
-                    .padding(.leading, -2)
+                    .frame(width: 63, height:28)
+                    .padding(.leading, -4)
             }
             .padding(.top, 24)
             
             Spacer()
             
-            VStack {
-                // ✅ 이미지 애니메이션 영역
-                ZStack {
-                    Image("image\(randomImageNumber)")
-                        .resizable()
-                        .aspectRatio(320.0 / 180.0, contentMode: .fit)
-                        .frame(maxWidth: .infinity)
-                        .cornerRadius(10)
-                        .clipped()
-                        .offset(imageOffset)
-                    
-                    VisualEffectBlur(style: .light)
-                        .cornerRadius(10)
-                        .frame(maxWidth: .infinity)
-                        .aspectRatio(320.0 / 180.0, contentMode: .fit)
-                        .offset(blurOffset)
-                    
-                    Button(action: {
-                        
-                    }) {
-                        Image(systemName: playIcon)
-                            .font(.system(size: 36, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                }
-                .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        startDropViewAnimation() // ✅ 화면이 나타날 때 이미지에 애니메이션 적용
-                    }
-                }
+            VStack{
+                
+                Image("startImage")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: UIScreen.main.bounds.width * 0.8)
+                    .cornerRadius(10)
+                    .clipped()
                 
                 // ✅ 하단에 텍스트 추가
-                Text("Welcome to Storyworld!")
-                    .font(.system(size: 12, weight: .medium))
+                Text("세계를 탐험하고 영상 컬렉션을 완성하세요!")
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white.opacity(0.8))
                     .padding(.top, 12)
+                
             }
+            .padding(.bottom, 24)
             
             Spacer()
             
@@ -90,12 +69,19 @@ struct StartView: View {
                     },
                     onCompletion: { result in
                         loginService.handleAppleSignInCompletion(result)
-
+                        
                         Task {
-                            // ✅ Firestore에서 데이터 동기화가 끝날 때까지 로딩 유지
+                            // ✅ Firestore에서 데이터 동기화 대기
                             await loginService.waitForDataSync()
+                            
                             DispatchQueue.main.async {
-                                isLoading = false // ✅ 데이터 로딩 후 로딩 종료
+                                // 화면 전환 코드가 있다면 여기에 넣어도 됨.
+                            }
+                            // ✅ 로딩 UI는 3초 더 유지한 후 해제
+                            try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
+                            
+                            DispatchQueue.main.async {
+                                isLoading = false // ✅ 3초 후 로딩 UI 해제
                             }
                         }
                     }
@@ -103,10 +89,10 @@ struct StartView: View {
                 .frame(height: 50)
                 .signInWithAppleButtonStyle(.white)
                 .cornerRadius(16)
-                .padding(.vertical, 16)
+                .padding(.bottom, 8)
                 .disabled(isLoading) // ✅ 로딩 중에는 버튼 비활성화
                 .opacity(isLoading ? 0.0 : 1.0) // ✅ 로딩 중에는 버튼 투명도 조절
-
+                
                 if isLoading {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -116,8 +102,22 @@ struct StartView: View {
                         .cornerRadius(25)
                 }
             }
-
-
+            VStack {
+                Text(attributedString)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundColor(.white.opacity(0.4))
+                    .padding(.bottom, 16)
+                    .onTapGesture {
+                        // 탭 제스처를 감지하여 링크를 열도록 설정
+                        if let range = attributedString.range(of: "이용약관"),
+                           let url = attributedString[range].link {
+                            openURL(url)
+                        } else if let range = attributedString.range(of: "개인정보처리방침"),
+                                  let url = attributedString[range].link {
+                            openURL(url)
+                        }
+                    }
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
@@ -134,5 +134,22 @@ struct StartView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             UIImpactFeedbackGenerator.trigger(.heavy)
         }
+    }
+    
+    private var attributedString: AttributedString {
+        var string = AttributedString("로그인 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.")
+        if let range = string.range(of: "이용약관") {
+            string[range].foregroundColor = .gray // 원하는 색상으로 설정
+            string[range].link = URL(string: "https://nmax.notion.site/18c6a17d455480c48f7decd6bc89b802?pvs=4")
+        }
+        if let range = string.range(of: "개인정보처리방침") {
+            string[range].foregroundColor = .gray // 원하는 색상으로 설정
+            string[range].link = URL(string: "https://nmax.notion.site/18c6a17d4554809db4d5ca7ee4ba709f?pvs=4")
+        }
+        return string
+    }
+
+    private func openURL(_ url: URL) {
+        UIApplication.shared.open(url)
     }
 }

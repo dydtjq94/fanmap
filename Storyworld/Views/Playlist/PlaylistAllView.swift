@@ -10,19 +10,32 @@ struct PlaylistAllView: View {
     
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(viewModel.playlists, id: \.id) { playlist in
-                    Button(action: {
-                        sheetManager.presentPlaylistDetail(for: playlist)
-                    }) {
-                        PlaylistItemView(playlist: playlist)
-                    }
+            if viewModel.playlists.isEmpty {
+                // ✅ 플레이리스트가 없을 때 표시되는 메시지
+                VStack {
+                    Spacer()
+                    Text("아직 만든 플레이리스트가 없어요!")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(.white.opacity(0.7))
+                        .padding(.top, 100)
+                    Spacer()
                 }
-                Spacer() // 빈 공간에서도 스크롤 가능하게 확장
+            } else {
+                LazyVStack(spacing: 12) {
+                    ForEach(viewModel.playlists, id: \.id) { playlist in
+                        Button(action: {
+                            sheetManager.presentPlaylistDetail(for: playlist)
+                        }) {
+                            PlaylistItemView(playlist: playlist)
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.top, 24)
             }
-            .padding(.horizontal)
-            .padding(.top, 24)
         }
+        .frame(maxWidth: .infinity)
         .background(Color(UIColor(hex:"#1D1D1D")))
         .toolbar(tabBarVisible ? .visible : .hidden, for: .tabBar)
         .onChange(of: isPresented) {

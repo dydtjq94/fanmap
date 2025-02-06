@@ -16,7 +16,7 @@ struct SplashScreenView: View {
             Color(AppColors.mainBgColor).ignoresSafeArea()
                 Image("logo")
                     .resizable()
-                    .frame(width: 160, height: 160)
+                    .frame(width: 120, height: 120)
                     .foregroundColor(.white)
                     .scaleEffect(scaleEffect)
                     .opacity(1.0)

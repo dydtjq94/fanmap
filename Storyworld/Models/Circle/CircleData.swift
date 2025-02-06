@@ -65,13 +65,13 @@ struct CircleData: Codable {
     static func getPrice(for rarity: VideoRarity) -> Int {
         switch rarity {
         case .silver:
-            return Int.random(in: 80...120)
+            return Int.random(in: 150...200)
         case .gold:
-            return Int.random(in: 200...400)
+            return Int.random(in: 300...400)
         case .diamond:
-            return Int.random(in: 1500...2500)
+            return Int.random(in: 2000...3000)
         case .ruby:
-            return Int.random(in: 50000...100000)
+            return Int.random(in: 80000...100000)
         }
     }
     

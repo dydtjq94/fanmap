@@ -8,10 +8,11 @@
 
 import SwiftUI
 
-struct DropResultWithCoinView: View {
+struct DropResultView: View {
     let video: Video
     let closeAction: () -> Void
     @State private var isGlowing = false // ✅ 상태 변수 추가
+    @State private var coinSellValue: Int = 0
     
     var body: some View {
         ZStack {
@@ -28,6 +29,37 @@ struct DropResultWithCoinView: View {
             }
             
             VStack {
+                Button(action: {
+                    UIImpactFeedbackGenerator.trigger(.heavy)
+                    CollectionService.shared.sellCollectedVideo(video, coinAmount: coinSellValue) { success in
+                           if success {
+                               closeAction() // ✅ 판매 성공 시 창 닫기
+                           } else {
+                               print("❌ 영상 판매 실패")
+                           }
+                       }
+                }) {
+                    HStack(spacing: 2) {
+                        Image(systemName: "dollarsign.circle.fill")
+                            .foregroundColor(Color(UIColor(hex: "#FFD700")))
+                            .font(.system(size: 14))
+                        Text("\(coinSellValue)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
+                        Text("에 팔기")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(Color(AppColors.mainBgColor))
+                }
+                .cornerRadius(10)
+                .padding(.top, 8)
+                .onAppear {
+                    coinSellValue = UserStatusManager.shared.getCoinSell(for: video.rarity)  // ✅ 한 번만 가져오도록 변경
+                }
+                
                 Spacer()
                 
                 VStack(spacing: 20) {
@@ -110,7 +142,7 @@ struct DropResultWithCoinView: View {
         let generator = UIImpactFeedbackGenerator(style: .light)
         
         let repeatCount: Int
-
+        
         switch rarity {
         case .silver:
             repeatCount = 5
@@ -121,7 +153,7 @@ struct DropResultWithCoinView: View {
         case .ruby:
             repeatCount = 20
         }
-
+        
         for i in 0..<repeatCount {
             DispatchQueue.main.asyncAfter(deadline: .now() + (0.025 * Double(i))) {
                 generator.impactOccurred()

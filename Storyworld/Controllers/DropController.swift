@@ -346,50 +346,54 @@ final class DropController: UIViewController {
     }
     
     private func showDropResult(with video: Video) {
-        // 기존에 있는 모든 서브뷰 제거
-        self.view.subviews.forEach { $0.removeFromSuperview() }
-        
-        // SwiftUI 뷰를 HostingController로 감싸기
-        let hostingController = UIHostingController(
-            rootView: DropResultWithCoinView(
-                video: video
-            ) {
-                self.dismiss(animated: true, completion: nil) // 닫기 액션
-            }
-        )
+        // 기존에 있는 모든 서브뷰 제거 (메인 스레드에서 실행)
+        DispatchQueue.main.async {
+            self.view.subviews.forEach { $0.removeFromSuperview() }
+            
+            // SwiftUI 뷰를 HostingController로 감싸기
+            let hostingController = UIHostingController(
+                rootView: DropResultView(
+                    video: video
+                ) {
+                    DispatchQueue.main.async { // ✅ 메인 스레드에서 실행하도록 변경
+                        self.dismiss(animated: true, completion: nil) // 닫기 액션
+                    }
+                }
+            )
 
-        // 배경 투명하게 설정
-        hostingController.view.backgroundColor = UIColor.clear
+            // 배경 투명하게 설정
+            hostingController.view.backgroundColor = UIColor.clear
 
-        // 새로운 SwiftUI 뷰 추가
-        self.addChild(hostingController)
-        self.view.addSubview(hostingController.view)
-        hostingController.didMove(toParent: self)
+            // 새로운 SwiftUI 뷰 추가
+            self.addChild(hostingController)
+            self.view.addSubview(hostingController.view)
+            hostingController.didMove(toParent: self)
 
-        // Auto Layout 설정
-        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            hostingController.view.topAnchor.constraint(equalTo: self.view.topAnchor),
-            hostingController.view.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
-            hostingController.view.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
-            hostingController.view.bottomAnchor.constraint(equalTo: self.view.bottomAnchor)
-        ])
-        
-        // 등장 애니메이션 적용
-        hostingController.view.alpha = 0
-        hostingController.view.transform = CGAffineTransform(translationX: 0, y: 30)
-        
-        UIView.animate(
-            withDuration: 0.4,
-            delay: 0.1,
-            usingSpringWithDamping: 0.7,
-            initialSpringVelocity: 0.5,
-            options: [.curveEaseOut],
-            animations: {
-                hostingController.view.alpha = 1
-                hostingController.view.transform = .identity
-            }
-        )
+            // Auto Layout 설정
+            hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                hostingController.view.topAnchor.constraint(equalTo: self.view.topAnchor),
+                hostingController.view.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+                hostingController.view.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+                hostingController.view.bottomAnchor.constraint(equalTo: self.view.bottomAnchor)
+            ])
+            
+            // 등장 애니메이션 적용
+            hostingController.view.alpha = 0
+            hostingController.view.transform = CGAffineTransform(translationX: 0, y: 30)
+            
+            UIView.animate(
+                withDuration: 0.4,
+                delay: 0.1,
+                usingSpringWithDamping: 0.7,
+                initialSpringVelocity: 0.5,
+                options: [.curveEaseOut],
+                animations: {
+                    hostingController.view.alpha = 1
+                    hostingController.view.transform = .identity
+                }
+            )
+        }
     }
     
     private func resetDropView() {

@@ -42,8 +42,6 @@ final class VideoController {
         
         let coordinates = pointGeometry.coordinates
         
-        print("🔍 Feature Properties: \(feature.properties ?? [:])") // ✅ 디버깅 추가
-        
         guard let circleDataValue = feature.properties?["circleData"],
               case let .string(encodedCircleData) = circleDataValue,
               let circleData = decodeCircleData(from: encodedCircleData) else {
@@ -89,7 +87,6 @@ final class VideoController {
         
         do {
             let decodedData = try decoder.decode(CircleData.self, from: jsonData)
-            print("✅ 디코딩 성공: \(decodedData)")
             return decodedData
         } catch {
             print("❌ CircleData 디코딩 실패: \(error.localizedDescription)")

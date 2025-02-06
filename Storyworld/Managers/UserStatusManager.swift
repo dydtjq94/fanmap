@@ -36,7 +36,34 @@ class UserStatusManager {
         case .diamond:
             return 400
         case .ruby:
-            return 1000
+            return 6000
+        }
+    }
+    
+    func getCoinSell(for rarity: VideoRarity) -> Int {
+        switch rarity {
+        case .silver:
+            return Int.random(in: 75...175)
+        case .gold:
+            return Int.random(in: 150...350)
+        case .diamond:
+            return Int.random(in: 1000...2500)
+        case .ruby:
+            return Int.random(in: 40000...90000)
+        }
+    }
+    
+    // 희귀도에 따른 가격 반환 (static 추가)
+    static func getPrice(for rarity: VideoRarity) -> Int {
+        switch rarity {
+        case .silver:
+            return Int.random(in: 150...200)
+        case .gold:
+            return Int.random(in: 300...400)
+        case .diamond:
+            return Int.random(in: 2000...3000)
+        case .ruby:
+            return Int.random(in: 80000...100000)
         }
     }
 
@@ -51,19 +78,6 @@ class UserStatusManager {
             return Int.random(in: 400...600)
         case .ruby:
             return Int.random(in: 1800...2200)
-        }
-    }
-    
-    func getCoinDeduct(for rarity: VideoRarity) -> Int {
-        switch rarity {
-        case .silver:
-            return Int.random(in: 100...300)
-        case .gold:
-            return Int.random(in: 1000...2000)
-        case .diamond:
-            return Int.random(in: 10000...20000)
-        case .ruby:
-            return Int.random(in: 50000...100000)
         }
     }
 }
