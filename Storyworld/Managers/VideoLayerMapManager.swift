@@ -20,7 +20,7 @@ final class VideoLayerMapManager {
     }
     
     func addGenreCircles(data: [CircleData], userLocation: CLLocationCoordinate2D, isScan: Bool = false) {
-        for (index, item) in data.enumerated() {
+        for (_, item) in data.enumerated() {
             let location = item.location
             
             // 타일 정보 기반 고유 ID 생성
@@ -30,7 +30,6 @@ final class VideoLayerMapManager {
             
             let sourceId = "source-\(tileKey)" // ✅ 스캔 여부 상관없이 동일한 형식 유지
             let glowLayerId = "glow-layer-\(tileKey)"
-            let circleLayerId = "circle-layer-\(tileKey)"
             let symbolLayerId = "symbol-layer-\(tileKey)"
             
             // 드롭 여부에 따라 opacity 설정
@@ -52,7 +51,7 @@ final class VideoLayerMapManager {
                     
                     feature.properties = [
                         "circleData": .string(jsonString),
-                        "genre": .string(item.genre.rawValue),
+                        "channel": .string(item.channel.rawValue),
                         "rarity": .string(item.rarity.rawValue),
                         "remainingCooldown": .number(remainingCooldown) // ✅ 남은 시간 추가
                     ]
@@ -110,38 +109,10 @@ final class VideoLayerMapManager {
                     try mapView.mapboxMap.addLayer(glowLayer)
                 }
                 
-//                // Circle Layer 설정
-//                var circleLayer = CircleLayer(id: circleLayerId, source: sourceId)
-//                // ✅ "remainingCooldown"이 0보다 크면 흰색, 아니면 기존 장르 색상
-//                circleLayer.circleColor = .expression(
-//                    Exp(.match,
-//                        Exp(.get, "genre"),
-//                        VideoGenre.entertainment.rawValue, StyleColor(VideoGenre.entertainment.uiColor).rawValue,
-//                        VideoGenre.talk.rawValue, StyleColor(VideoGenre.talk.uiColor).rawValue,
-//                        VideoGenre.music.rawValue, StyleColor(VideoGenre.music.uiColor).rawValue,
-//                        VideoGenre.sports.rawValue, StyleColor(VideoGenre.sports.uiColor).rawValue,
-//                        VideoGenre.vlog.rawValue, StyleColor(VideoGenre.vlog.uiColor).rawValue,
-//                        VideoGenre.fashion.rawValue, StyleColor(VideoGenre.fashion.uiColor).rawValue,
-//                        VideoGenre.food.rawValue, StyleColor(VideoGenre.food.uiColor).rawValue,
-//                        VideoGenre.education.rawValue, StyleColor(VideoGenre.education.uiColor).rawValue,
-//                        VideoGenre.game.rawValue, StyleColor(VideoGenre.game.uiColor).rawValue,
-//                        StyleColor(UIColor.gray).rawValue // 기본값
-//                       )
-//                )
-//                circleLayer.circleRadius = .constant(14.0)
-//                circleLayer.circleOpacity = .expression(
-//                    Exp(.step,
-//                        Exp(.get, "remainingCooldown"), // ✅ remainingCooldown 값을 기준으로 조건 적용
-//                        1.0,  // 🔥 기본값 (쿨다운이 남아있으면 0.8 유지)
-//                        0.1,  // ✅ remainingCooldown이 0 이하일 때
-//                        0.5   // 🔥 투명도 낮춰서 흐려지게 설정
-//                       )
-//                )
-                
                 //                 Symbol Layer 설정
                 let defaultIcon = "logo_small"          // 기본 아이콘
                 let cooldownIcon = "logo_small_black"   // 쿨다운이 0 이하일 때 아이콘
-
+                
                 // 🟢 1. Mapbox에 이미지 추가 (두 개 모두 등록)
                 try mapView.mapboxMap.addImage(
                     UIImage(named: defaultIcon)!,
@@ -151,17 +122,17 @@ final class VideoLayerMapManager {
                     UIImage(named: cooldownIcon)!,
                     id: cooldownIcon
                 )
-
+                
                 // 🟡 2. Symbol Layer 설정
                 var symbolLayer = SymbolLayer(id: symbolLayerId, source: sourceId)
-
+                
                 // 🟠 3. remainingCooldown 값에 따라 아이콘 변경
                 symbolLayer.iconImage = .expression(
                     Exp(.step,
                         Exp(.get, "remainingCooldown"),
                         defaultIcon,
                         1, cooldownIcon
-                    )
+                       )
                 )
                 
                 symbolLayer.iconSize = .constant(0.2) // 아이콘 크기 조정
@@ -170,19 +141,19 @@ final class VideoLayerMapManager {
                 symbolLayer.iconIgnorePlacement = .constant(true) // 배치 무시
                 symbolLayer.iconOpacity = .constant(1.0)
                 
-//                symbolLayer.iconOpacity = .expression(
-//                    Exp(.step,
-//                        Exp(.get, "remainingCooldown"), // ✅ remainingCooldown 값을 기준으로 조건 적용
-//                        1.0,  // 🔥 기본값 (쿨다운이 남아있으면 0.8 유지)
-//                        1.0,  // ✅ remainingCooldown이 0 이하일 때
-//                        1.0   // 🔥 투명도 낮춰서 흐려지게 설정
-//                       )
-//                )
+                //                symbolLayer.iconOpacity = .expression(
+                //                    Exp(.step,
+                //                        Exp(.get, "remainingCooldown"), // ✅ remainingCooldown 값을 기준으로 조건 적용
+                //                        1.0,  // 🔥 기본값 (쿨다운이 남아있으면 0.8 유지)
+                //                        1.0,  // ✅ remainingCooldown이 0 이하일 때
+                //                        1.0   // 🔥 투명도 낮춰서 흐려지게 설정
+                //                       )
+                //                )
                 
                 try mapView.mapboxMap.addLayer(symbolLayer)
                 // Mapbox 지도에 레이어 추가
-//                try mapView.mapboxMap.addLayer(circleLayer)
-//                try mapView.mapboxMap.addLayer(symbolLayer, layerPosition: .above(circleLayer.id))
+                //                try mapView.mapboxMap.addLayer(circleLayer)
+                //                try mapView.mapboxMap.addLayer(symbolLayer, layerPosition: .above(circleLayer.id))
                 
             } catch {
                 print("❌ 레이어 추가 실패: \(error.localizedDescription)")
@@ -244,7 +215,7 @@ final class VideoLayerMapManager {
     
     func removeAllVideoLayers() {
         do {
-            let allLayers = try mapView.mapboxMap.allLayerIdentifiers
+            let allLayers = mapView.mapboxMap.allLayerIdentifiers
             for layer in allLayers {
                 if layer.id.contains("circle-layer") || layer.id.contains("glow-layer") || layer.id.contains("symbol-layer") {
                     try mapView.mapboxMap.removeLayer(withId: layer.id)
@@ -252,7 +223,7 @@ final class VideoLayerMapManager {
                 }
             }
             
-            let allSources = try mapView.mapboxMap.allSourceIdentifiers
+            let allSources = mapView.mapboxMap.allSourceIdentifiers
             for source in allSources {
                 if source.id.contains("source") {
                     try mapView.mapboxMap.removeSource(withId: source.id)
@@ -272,47 +243,44 @@ final class VideoLayerMapManager {
         
         print("👌 map 강제 업데이트중 - TileKey: \(tileKey), Source ID: \(sourceId)")
         
-        do {
-            guard let tileInfo = tileService.getTileInfo(for: Tile.fromKey(tileKey)!) else {
-                print("⚠️ \(tileKey)에 해당하는 타일 정보가 없습니다.")
-                return
-            }
-            
-            let currentTime = Date().timeIntervalSince1970 // 🔥 현재 시간 (초 단위)
-            
-            var features: [Feature] = []
-            
-            for item in tileInfo.layerData {
-                var feature = Feature(geometry: .point(Point(item.location)))
-                
-                let encoder = JSONEncoder()
-                if let encodedData = try? encoder.encode(item),
-                   let jsonString = String(data: encodedData, encoding: .utf8) {
-                    
-                    // ✅ 남은 cooldown 계산 (0 이하이면 expired)
-                    let elapsedTime = currentTime - (item.lastDropTime?.timeIntervalSince1970 ?? 0)
-                    let remainingCooldown = max(item.cooldownTime - elapsedTime, 0)
-                    
-                    feature.properties = [
-                        "circleData": .string(jsonString),
-                        "genre": .string(item.genre.rawValue),
-                        "rarity": .string(item.rarity.rawValue),
-                        "remainingCooldown": .number(remainingCooldown) // ✅ 남은 시간 추가
-                    ]
-                }
-                
-                features.append(feature)
-            }
-            
-            // ✅ 기존 GeoJSONSource 업데이트
-            try mapView.mapboxMap.updateGeoJSONSource(
-                withId: sourceId,
-                geoJSON: .featureCollection(Turf.FeatureCollection(features: features))
-            )
-            print("🔄 특정 CircleData 업데이트 완료: \(circleData.id) on \(tileKey)")
-            
-        } catch {
-            print("❌ 특정 CircleData 업데이트 실패: \(error.localizedDescription)")
+        
+        guard let tileInfo = tileService.getTileInfo(for: Tile.fromKey(tileKey)!) else {
+            print("⚠️ \(tileKey)에 해당하는 타일 정보가 없습니다.")
+            return
         }
+        
+        let currentTime = Date().timeIntervalSince1970 // 🔥 현재 시간 (초 단위)
+        
+        var features: [Feature] = []
+        
+        for item in tileInfo.layerData {
+            var feature = Feature(geometry: .point(Point(item.location)))
+            
+            let encoder = JSONEncoder()
+            if let encodedData = try? encoder.encode(item),
+               let jsonString = String(data: encodedData, encoding: .utf8) {
+                
+                // ✅ 남은 cooldown 계산 (0 이하이면 expired)
+                let elapsedTime = currentTime - (item.lastDropTime?.timeIntervalSince1970 ?? 0)
+                let remainingCooldown = max(item.cooldownTime - elapsedTime, 0)
+                
+                feature.properties = [
+                    "circleData": .string(jsonString),
+                    "channel": .string(item.channel.rawValue),
+                    "rarity": .string(item.rarity.rawValue),
+                    "remainingCooldown": .number(remainingCooldown) // ✅ 남은 시간 추가
+                ]
+            }
+            
+            features.append(feature)
+        }
+        
+        // ✅ 기존 GeoJSONSource 업데이트
+        mapView.mapboxMap.updateGeoJSONSource(
+            withId: sourceId,
+            geoJSON: .featureCollection(Turf.FeatureCollection(features: features))
+        )
+        print("🔄 특정 CircleData 업데이트 완료: \(circleData.id) on \(tileKey)")
+        
     }
 }

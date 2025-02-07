@@ -11,10 +11,8 @@ struct Video: Codable, Equatable, Hashable {
     let videoId: String
     let title: String
     let description: String?
-    let thumbnailURL: String
     let channelId: String // 채널 ID만 참조
     let publishDate: Date?
-    let genre: VideoGenre
     var rarity: VideoRarity
 }
 

@@ -101,8 +101,8 @@ class UserService: ObservableObject {
         
         // ✅ 1. UserDefaults에서 캐싱된 URL 확인
         if let cachedURL = UserDefaults.standard.string(forKey: profileImageCacheKey) {
-            DispatchQueue.main.async {
-                self.user?.profileImageURL = cachedURL
+            DispatchQueue.main.async { [weak self] in
+                self?.user?.profileImageURL = cachedURL
             }
             print("✅ 캐싱된 프로필 이미지 URL 사용: \(cachedURL)")
             return

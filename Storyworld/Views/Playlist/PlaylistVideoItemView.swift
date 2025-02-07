@@ -37,8 +37,8 @@ struct PlaylistVideoItemView: View {
                     .foregroundColor(Color(UIColor(hex:"#ffffff")))
                     .padding(.bottom, 1)
                 
-                Text(Channel.getChannelName(by: collectedVideo.video.channelId))
-                    .font(.system(size: 12, weight: .regular))
+                Text(VideoChannel.getChannelName(by: collectedVideo.video.channelId))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundColor(Color(UIColor(hex:"#CECECE")))
                     .lineLimit(1)
                     .padding(.bottom, 2)
@@ -64,7 +64,7 @@ struct PlaylistVideoItemView: View {
             showingDetail = true
         }
         .sheet(isPresented: $showingDetail) {
-            VideoDetailedView(video: collectedVideo.video, genre: collectedVideo.video.genre, rarity: collectedVideo.video.rarity)
+            VideoDetailedView(video: collectedVideo.video, rarity: collectedVideo.video.rarity)
         }
     }
 }

@@ -271,7 +271,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         }
         
         // 지도에 모든 타일의 레이어 추가 (기존 + 새로운 타일 포함)
-        for (tile, circleData) in circlesToAdd {
+        for (_, circleData) in circlesToAdd {
             videoController.videoLayerMapManager.addGenreCircles(
                 data: circleData,
                 userLocation: coordinate,

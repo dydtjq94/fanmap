@@ -46,7 +46,7 @@ struct DropResultView: View {
                         Text("\(coinSellValue)")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
-                        Text("에 팔기")
+                        Text("에 판매")
                             .font(.system(size: 14))
                             .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                     }
@@ -75,14 +75,25 @@ struct DropResultView: View {
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text(video.title)
-                            .font(.title2.bold())
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                             .multilineTextAlignment(.leading)
                             .lineLimit(2)
                         
-                        Text(Channel.getChannelName(by: video.channelId))
-                            .font(.headline)
-                            .foregroundColor(Color.white)
+                        HStack(spacing: 4) {
+                            Image(VideoChannel.getChannelImageName(by: video.channelId)) // 🔥 채널 프로필 이미지 사용
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 20, height: 20)
+                                .clipShape(Circle()) // 🔥 원형으로 변환
+                            
+                            Text(VideoChannel.getChannelName(by: video.channelId))
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(Color.white)
+                                .padding(.leading, 2)
+                        }
+                        .padding(.top, 4)
+
                         
                         HStack {
                             HStack(spacing: 12) {

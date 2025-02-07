@@ -57,7 +57,7 @@ final class DropView: UIView {
         ])
     }
     
-    func dropSettingView(genre: String, rarity: String) {
+    func dropSettingView(channel: String, rarity: String) {
         
         let randomImageNumber = Int.random(in: 1...11)
         let imageName = "image\(randomImageNumber)"

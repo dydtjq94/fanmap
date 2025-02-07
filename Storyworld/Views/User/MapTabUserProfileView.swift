@@ -76,7 +76,7 @@ struct MapTabUserProfileView: View {
             .padding()
             .background(Color(UIColor(hex:"#1B1B1B")))
             .cornerRadius(12)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 8)
             .padding(.top, 4)
         }
         .onAppear {
@@ -84,7 +84,7 @@ struct MapTabUserProfileView: View {
                 self.profileImage = image
             }
         }
-        .onChange(of: userService.user?.profileImageURL) { _ in
+        .onChange(of: userService.user?.profileImageURL) {
             userService.loadProfileImage { image in
                 self.profileImage = image
             }

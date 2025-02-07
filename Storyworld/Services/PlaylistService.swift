@@ -9,6 +9,7 @@ import Foundation
 import UIKit
 import FirebaseFirestore
 import FirebaseAuth
+import FirebaseStorage
 
 class PlaylistService {
     static let shared = PlaylistService()
@@ -45,7 +46,7 @@ class PlaylistService {
         
         do {
             for playlist in playlists {
-                try await userRef.collection("playlists").document(playlist.id).setData(from: playlist)
+                try userRef.collection("playlists").document(playlist.id).setData(from: playlist)
             }
             print("🔥 Firestore에 플레이리스트 저장 완료!")
         } catch {
@@ -149,7 +150,7 @@ class PlaylistService {
         let playlistRef = userRef.collection("playlists").document(playlist.id)
         
         do {
-            try await playlistRef.setData(from: playlist)
+            try playlistRef.setData(from: playlist)
             print("🔥 Firestore에서 플레이리스트 업데이트 완료! ID: \(playlist.id)")
         } catch {
             print("❌ Firestore에서 플레이리스트 업데이트 실패: \(error.localizedDescription)")
@@ -180,6 +181,76 @@ class PlaylistService {
             print("❌ Firestore에서 playlists 불러오기 실패: \(error.localizedDescription)")
         }
     }
+    
+    /// ✅ 플레이리스트 썸네일 이미지 업로드
+       func uploadPlaylistThumbnail(playlist: Playlist, image: UIImage, completion: @escaping (URL?) -> Void) {
+           // 로그인 유저 확인
+           guard let currentUser = Auth.auth().currentUser else {
+               print("❌ 로그인된 유저가 없습니다.")
+               completion(nil)
+               return
+           }
+           
+           // 1) 이미지 최적화 (선택적으로 크기 조정 & 압축)
+           let resizedImage = image.resized(toWidth: 600)  // 600px 너비로 리사이즈 예시
+           guard let imageData = resizedImage.jpegData(compressionQuality: 0.7) else {
+               print("❌ 이미지 JPEG 변환 실패")
+               completion(nil)
+               return
+           }
+           
+           // 2) Firebase Storage 참조
+           let storageRef = Storage.storage().reference()
+           let playlistImageRef = storageRef.child("playlist_images/\(currentUser.uid)_\(playlist.id).jpg")
+           
+           // 3) 업로드
+           playlistImageRef.putData(imageData, metadata: nil) { metadata, error in
+               if let error = error {
+                   print("❌ 썸네일 업로드 실패: \(error.localizedDescription)")
+                   completion(nil)
+                   return
+               }
+               
+               // 4) 다운로드 URL 가져오기
+               playlistImageRef.downloadURL { url, error in
+                   if let error = error {
+                       print("❌ 다운로드 URL 가져오기 실패: \(error.localizedDescription)")
+                       completion(nil)
+                       return
+                   }
+                   
+                   guard let downloadURL = url else {
+                       completion(nil)
+                       return
+                   }
+                   
+                   // 5) Firestore의 thumbnailURL 업데이트
+                   Task {
+                       await self.updatePlaylistThumbnailURL(playlist: playlist, url: downloadURL)
+                   }
+                   
+                   completion(downloadURL)
+               }
+           }
+       }
+       
+       /// ✅ Firestore의 playlist.thumbnailURL 업데이트
+       func updatePlaylistThumbnailURL(playlist: Playlist, url: URL) async {
+           var updatedPlaylist = playlist
+           updatedPlaylist.thumbnailURL = url.absoluteString
+           
+           // 1) UserDefaults 업데이트
+           var playlists = loadPlaylists()
+           if let index = playlists.firstIndex(where: { $0.id == playlist.id }) {
+               playlists[index].thumbnailURL = url.absoluteString
+           }
+           await savePlaylists(playlists)
+           
+           // 2) Firestore 업데이트
+           await updatePlaylistInFirestore(updatedPlaylist)
+           
+           print("✅ 플레이리스트 썸네일 URL 업데이트 완료: \(url.absoluteString)")
+       }
 
 }
 

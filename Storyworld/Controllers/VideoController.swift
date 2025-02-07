@@ -30,7 +30,7 @@ final class VideoController {
     }
     
     func updateUIWithVideoData() {
-        guard let video = selectedVideo else { return }
+        guard selectedVideo != nil else { return }
     }
     
     // Feature 선택 처리

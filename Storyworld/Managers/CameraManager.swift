@@ -68,9 +68,6 @@ final class CameraManager {
     func configureGestureOptions() {
         // 지도 기울이기 비활성화
         mapView.gestures.options.pitchEnabled = false // 기울이기 비활성화
-        
-        // 지도 회전 비활성화
-        mapView.gestures.options.rotateEnabled = false // 회전 비활성화
-        print("✅ 지도 기울이기와 회전이 비활성화되었습니다.")
+        print("✅ 지도 기울이기가 비활성화되었습니다.")
     }
 }

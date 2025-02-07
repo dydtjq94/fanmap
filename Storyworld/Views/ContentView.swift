@@ -18,19 +18,35 @@ struct ContentView: View {
                 MapTab()
             }
             .tabItem {
-                Label("Map", systemImage: "map")
+                Label("지도", systemImage: "map")
             }
             .tag(0)
             .tint(.gray)
             
             NavigationView {
-               ProfileTab()
+                TradeTab()
             }
             .tabItem {
-                Label("Profile", systemImage: "person")
+                Label("거래", systemImage: "play.rectangle.on.rectangle.fill")
             }
             .tag(1)
-
+            
+            NavigationView {
+                QuestTab()
+            }
+            .tabItem {
+                Label("퀘스트", systemImage: "lasso.badge.sparkles")
+            }
+            .tag(2)
+            
+            NavigationView {
+                ProfileTab()
+            }
+            .tabItem {
+                Label("프로필", systemImage: "person")
+            }
+            .tag(3)
+            
         }
         .environmentObject(userService)  // 하위 뷰에 전달
         .tint(Color.white)
@@ -38,7 +54,7 @@ struct ContentView: View {
             let tabBarAppearance = UITabBarAppearance()
             tabBarAppearance.backgroundColor = UIColor(hex: "#1B1B1B") // ✅ 원하는 색상 고정
             tabBarAppearance.shadowColor = .clear // ✅ 하단 경계선 제거
-
+            
             UITabBar.appearance().standardAppearance = tabBarAppearance
             UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
             UITabBar.appearance().unselectedItemTintColor = UIColor(hex: "#434343") // ✅ 비활성화 아이콘 색

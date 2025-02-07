@@ -57,7 +57,7 @@ final class TileService {
         // 🔥 CircleData 생성 시 tileKey 추가
         let updatedLayerData = layerData.map { circle in
             CircleData(
-                genre: circle.genre,
+                channel: circle.channel,
                 rarity: circle.rarity,
                 location: circle.location,
                 basePrice: circle.basePrice,
@@ -197,7 +197,7 @@ final class TileService {
         }
 
         // 🔥 해당 타일의 CircleData를 업데이트
-        var updatedLayerData = tileInfo.layerData.map { circle -> CircleData in
+        let updatedLayerData = tileInfo.layerData.map { circle -> CircleData in
             if circle.id == circleData.id {
                 // 같은 CircleData를 찾으면 lastDropTime 업데이트
                 var updatedCircle = circle

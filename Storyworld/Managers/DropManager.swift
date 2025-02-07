@@ -11,30 +11,39 @@ import SwiftUI
 
 final class DropManager {
     private let mapView: MapView
+    private let cameraManager: CameraManager  // 🔥 추가
     
     
     init(mapView: MapView) {
         self.mapView = mapView
-    }
-    
-    func showProSubscriptionView(videoGenre: VideoGenre, videoRarity: VideoRarity) {
-        UIImpactFeedbackGenerator.trigger(.heavy)
-        
-        print("🔒 PRO 구독이 필요합니다.")
-        
-        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = scene.windows.first,
-           let topVC = window.rootViewController {
-            
-            let proView = ProSubscriptionView()
-            let hostingController = UIHostingController(rootView: proView)
-            hostingController.modalPresentationStyle = .overFullScreen
-            topVC.present(hostingController, animated: true, completion: nil)
-        }
-    }
+        self.cameraManager = CameraManager(mapView: mapView) // ✅ CameraManager 초기화
+            }
+//
+//    func showProSubscriptionView(videoGenre: VideoGenre, videoRarity: VideoRarity) {
+//        UIImpactFeedbackGenerator.trigger(.heavy)
+//        
+//        print("🔒 PRO 구독이 필요합니다.")
+//        
+//        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+//           let window = scene.windows.first,
+//           let topVC = window.rootViewController {
+//            
+//            let proView = ProSubscriptionView()
+//            let hostingController = UIHostingController(rootView: proView)
+//            hostingController.modalPresentationStyle = .overFullScreen
+//            topVC.present(hostingController, animated: true, completion: nil)
+//        }
+//    }
     
     func showDropWithCoinView(circleData: CircleData) {
         UIImpactFeedbackGenerator.trigger(.heavy)
+        
+        // ✅ 현재 카메라의 줌 레벨 가져오기
+           let currentZoom = mapView.mapboxMap.cameraState.zoom
+        
+        // ✅ 카메라를 해당 CircleData 위치로 이동
+        cameraManager.moveCameraToCurrentLocation(location: circleData.location, zoomLevel: currentZoom)
+
         
         // 최상위 ViewController 찾기
         if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,

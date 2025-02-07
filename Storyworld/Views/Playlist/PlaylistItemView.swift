@@ -39,9 +39,10 @@ struct PlaylistItemView: View {
                 Text(playlist.name)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(Color(UIColor(hex:"#ffffff")))
+                    .padding(.bottom, 4)
 
                 Text("\(playlist.videoIds.count)개의 영상")
-                    .font(.system(size: 14))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(Color(UIColor(hex:"#CECECE")))
             }
 

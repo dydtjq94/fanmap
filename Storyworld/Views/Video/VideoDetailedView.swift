@@ -9,7 +9,8 @@ import SwiftUI
 
 struct VideoDetailedView: View {
     let video: Video
-    let genre: VideoGenre
+//    let channel: VideoChannel
+//    let genre: VideoGenre
     let rarity: VideoRarity
     @Environment(\.presentationMode) var presentationMode
     @State private var isGlowing = false // ✅ 상태 변수 추가
@@ -42,14 +43,24 @@ struct VideoDetailedView: View {
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text(video.title)
-                            .font(.title2.bold())
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                             .multilineTextAlignment(.leading)
                             .lineLimit(2)
                         
-                        Text(Channel.getChannelName(by: video.channelId))
-                            .font(.headline)
-                            .foregroundColor(Color.white)
+                        HStack(spacing: 4) {
+                            Image(VideoChannel.getChannelImageName(by: video.channelId)) // 🔥 채널 프로필 이미지 사용
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 20, height: 20)
+                                .clipShape(Circle()) // 🔥 원형으로 변환
+                            
+                            Text(VideoChannel.getChannelName(by: video.channelId))
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(Color.white)
+                                .padding(.leading, 2)
+                        }
+                        .padding(.top, 4)
                         
                         HStack{
                             HStack(spacing: 12) {

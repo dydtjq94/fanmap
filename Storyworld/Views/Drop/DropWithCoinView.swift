@@ -109,7 +109,7 @@ struct DropWithCoinView: View {
                 // 희귀도 및 장르 뱃지
                 HStack(spacing: 12) {
                     RarityBadgeView(rarity: circleData.rarity)
-//                    GenreBadgeView(genre: circleData.genre)
+                    ChannelBadgeView(channel: circleData.channel)
                     CooldownBadgeView(circleData: circleData)
                 }
                 
@@ -252,7 +252,7 @@ struct DropWithCoinView: View {
     
     // ✅ fetch 완료될 때까지 이미지 애니메이션 유지
     private func fetchVideosAndAnimate(completion: @escaping (Video?) -> Void) {
-        CollectionService.shared.fetchRandomVideoByGenre(genre: circleData.genre, rarity: circleData.rarity) { result in
+        CollectionService.shared.fetchRandomVideoByChannel(channel: circleData.channel, rarity: circleData.rarity) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let video):
@@ -278,53 +278,3 @@ struct DropWithCoinView: View {
         showDropResultView = true
     }
 }
-
-
-//    private func fetchVideosAndAnimate() {
-//        CollectionService.shared.fetchUncollectedVideos(for: circleData.genre, rarity: circleData.rarity) { result in
-//            DispatchQueue.main.async {
-//                switch result {
-//                case .success(let filteredVideos):
-//                    guard let video = filteredVideos.randomElement() else {
-//                        print("⚠️ No videos available")
-//                        return
-//                    }
-//
-//                    // 코인 차감 시도
-//                    let success = UserService.shared.deductCoins(amount: dropPrice)
-//                    if success {
-//                        self.selectedVideo = video
-//                        CollectionService.shared.saveCollectedVideoWithoutReward(video, amount: dropPrice)
-//                        startImageSequenceAnimation()
-//                    } else {
-//                        print("❌ 코인 부족으로 영상 열기 실패")
-//                        playIcon = "play.fill"
-//                        withAnimation(.easeInOut(duration: 0.3)) {
-//                            blurOffset = CGSize(width: -5, height: 3)
-//                            imageOffset = CGSize(width: 5, height: -3)
-//                        }
-//                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-//                            let generator = UIImpactFeedbackGenerator(style: .heavy)
-//                            generator.prepare()
-//                            generator.impactOccurred()
-//                        }
-//                        isAnimating = false
-//                    }
-//
-//                case .failure(let error):
-//                    print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
-//                    playIcon = "play.fill"
-//                    withAnimation(.easeInOut(duration: 0.3)) {
-//                        blurOffset = CGSize(width: -5, height: 3)
-//                        imageOffset = CGSize(width: 5, height: -3)
-//                    }
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-//                        let generator = UIImpactFeedbackGenerator(style: .heavy)
-//                        generator.prepare()
-//                        generator.impactOccurred()
-//                    }
-//                    isAnimating = false
-//                }
-//            }
-//        }
-//    }

@@ -34,7 +34,7 @@ struct CollectionItemView: View {
                     .foregroundColor(Color(UIColor(hex:"#ffffff")))
                     .padding(.bottom, 1)
                 
-                Text(Channel.getChannelName(by: collectedVideo.video.channelId))
+                Text(VideoChannel.getChannelName(by: collectedVideo.video.channelId))
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(Color(UIColor(hex:"#CECECE")))
                     .lineLimit(1)
@@ -50,7 +50,7 @@ struct CollectionItemView: View {
             showingDetail = true
         }
         .sheet(isPresented: $showingDetail) {
-            VideoDetailedView(video: collectedVideo.video, genre: collectedVideo.video.genre, rarity: collectedVideo.video.rarity)
+            VideoDetailedView(video: collectedVideo.video, rarity: collectedVideo.video.rarity)
         }
     }
 }

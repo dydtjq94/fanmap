@@ -11,7 +11,7 @@ import CoreLocation
 
 struct CircleData: Codable {
     let id: UUID
-    let genre: VideoGenre
+    let channel: VideoChannel
     let rarity: VideoRarity
     let location: CLLocationCoordinate2D
     let basePrice: Int
@@ -20,12 +20,12 @@ struct CircleData: Codable {
     let tileKey: String  // 🔥 타일 정보를 직접 저장!
 
     private enum CodingKeys: String, CodingKey {
-        case id, genre, rarity, latitude, longitude, basePrice, lastDropTime, cooldownTime, tileKey
+        case id, channel, rarity, latitude, longitude, basePrice, lastDropTime, cooldownTime, tileKey
     }
 
-    init(genre: VideoGenre, rarity: VideoRarity, location: CLLocationCoordinate2D, basePrice: Int, cooldownTime: TimeInterval, lastDropTime: Date?, tileKey: String) {
+    init(channel: VideoChannel, rarity: VideoRarity, location: CLLocationCoordinate2D, basePrice: Int, cooldownTime: TimeInterval, lastDropTime: Date?, tileKey: String) {
         self.id = UUID()
-        self.genre = genre
+        self.channel = channel
         self.rarity = rarity
         self.location = location
         self.basePrice = basePrice
@@ -37,7 +37,7 @@ struct CircleData: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
-        genre = try container.decode(VideoGenre.self, forKey: .genre)
+        channel = try container.decode(VideoChannel.self, forKey: .channel)
         rarity = try container.decode(VideoRarity.self, forKey: .rarity)
         let latitude = try container.decode(Double.self, forKey: .latitude)
         let longitude = try container.decode(Double.self, forKey: .longitude)
@@ -51,7 +51,7 @@ struct CircleData: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
-        try container.encode(genre, forKey: .genre)
+        try container.encode(channel, forKey: .channel)
         try container.encode(rarity, forKey: .rarity)
         try container.encode(location.latitude, forKey: .latitude)
         try container.encode(location.longitude, forKey: .longitude)

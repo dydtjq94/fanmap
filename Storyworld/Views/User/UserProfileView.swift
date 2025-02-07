@@ -29,7 +29,7 @@ struct UserProfileView: View {
     @State private var profileImage: UIImage? = nil
 
     var body: some View {
-        if let user = userService.user {
+        if userService.user != nil {
             HStack(alignment: .center, spacing: 16) {
                 
                 // 프로필 이미지 & 로딩 표시 ZStack
@@ -127,7 +127,7 @@ struct UserProfileView: View {
                                 .foregroundColor(Color(AppColors.green1))
                                 .font(.system(size: 12))
                             
-                            Text("\(UserDefaults.standard.loadCollectedVideos().count ?? 0)")
+                            Text("\(UserDefaults.standard.loadCollectedVideos().count)")
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                         }
@@ -201,7 +201,7 @@ struct UserProfileView: View {
                     self.profileImage = image
                 }
             }
-            .onChange(of: userService.user?.profileImageURL) { _ in
+            .onChange(of: userService.user?.profileImageURL) {
                 userService.loadProfileImage { image in
                     self.profileImage = image
                 }

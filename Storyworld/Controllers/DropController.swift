@@ -93,30 +93,33 @@ final class DropController: UIViewController {
         rarityContainerView.translatesAutoresizingMaskIntoConstraints = false
         rarityContainerView.addSubview(rarityStackView)
         
-//        // 장르 SF Symbol 설정
-//        genreImageView.image = UIImage(systemName: "play.fill")?.withRenderingMode(.alwaysTemplate)
-//        //        genreImageView.image = UIImage(named: "chim")
-//        genreImageView.tintColor = circleData.genre.uiColor
-//        genreImageView.contentMode = .scaleAspectFit
-//        genreImageView.translatesAutoresizingMaskIntoConstraints = false
-//        
-//        genreLabel.text = circleData.genre.localized()
-//        genreLabel.textColor = circleData.genre.uiColor
-//        genreLabel.font = UIFont.boldSystemFont(ofSize: 12)
-//        
-//        // 장르 StackView 구성
-//        genreStackView.axis = .horizontal
-//        genreStackView.alignment = .center
-//        genreStackView.spacing = 6
-//        genreStackView.addArrangedSubview(genreImageView)
-//        genreStackView.addArrangedSubview(genreLabel)
-//        genreStackView.translatesAutoresizingMaskIntoConstraints = false
-//        
-//        // 장르 컨테이너 뷰 설정 (배경 색 추가)
-//        genreContainerView.backgroundColor = circleData.genre.backgroundColor
-//        genreContainerView.layer.cornerRadius = 8
-//        genreContainerView.translatesAutoresizingMaskIntoConstraints = false
-//        genreContainerView.addSubview(genreStackView)
+        // 장르 SF Symbol 설정
+        genreImageView.image = UIImage(named: circleData.channel.imageName)
+        genreImageView.tintColor = circleData.rarity.backgroundColor
+        genreImageView.contentMode = .scaleAspectFit
+        genreImageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // ✅ 이미지 원형으로 만들기
+        genreImageView.layer.cornerRadius = 12  // 🔥 반지름을 절반으로 설정 (24x24 가정)
+        genreImageView.clipsToBounds = true  // ✅ 원형 적용 유지
+        
+        genreLabel.text = circleData.channel.localized()
+        genreLabel.textColor = .white  // 🔥 흰색으로 변경
+        genreLabel.font = UIFont.boldSystemFont(ofSize: 12)
+        
+        // 장르 StackView 구성
+        genreStackView.axis = .horizontal
+        genreStackView.alignment = .center
+        genreStackView.spacing = 6
+        genreStackView.addArrangedSubview(genreImageView)
+        genreStackView.addArrangedSubview(genreLabel)
+        genreStackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 장르 컨테이너 뷰 설정 (배경 색 추가)
+        genreContainerView.backgroundColor = circleData.rarity.backgroundColor
+        genreContainerView.layer.cornerRadius = 8
+        genreContainerView.translatesAutoresizingMaskIntoConstraints = false
+        genreContainerView.addSubview(genreStackView)
         
         // 메인 스택뷰 설정
         infoStackView.axis = .horizontal
@@ -156,19 +159,19 @@ final class DropController: UIViewController {
             rarityStackView.topAnchor.constraint(equalTo: rarityContainerView.topAnchor, constant: 3),
             rarityStackView.bottomAnchor.constraint(equalTo: rarityContainerView.bottomAnchor, constant: -3),
             rarityStackView.heightAnchor.constraint(equalToConstant: 24),
-            
+                    
             // Genre StackView 크기 조정
-//            genreStackView.leadingAnchor.constraint(equalTo: genreContainerView.leadingAnchor, constant: 8),
-//            genreStackView.trailingAnchor.constraint(equalTo: genreContainerView.trailingAnchor, constant: -8),
-//            genreStackView.topAnchor.constraint(equalTo: genreContainerView.topAnchor, constant: 3),
-//            genreStackView.bottomAnchor.constraint(equalTo: genreContainerView.bottomAnchor, constant: -3),
-//            genreStackView.heightAnchor.constraint(equalToConstant: 24),
+            genreStackView.leadingAnchor.constraint(equalTo: genreContainerView.leadingAnchor, constant: 8),
+            genreStackView.trailingAnchor.constraint(equalTo: genreContainerView.trailingAnchor, constant: -8),
+            genreStackView.topAnchor.constraint(equalTo: genreContainerView.topAnchor, constant: 3),
+            genreStackView.bottomAnchor.constraint(equalTo: genreContainerView.bottomAnchor, constant: -3),
+            genreStackView.heightAnchor.constraint(equalToConstant: 24),
             
             // 희귀도 및 장르 이미지 크기 조정
             rarityImageView.widthAnchor.constraint(equalToConstant: 18),
             rarityImageView.heightAnchor.constraint(equalToConstant: 18),
-//            genreImageView.widthAnchor.constraint(equalToConstant: 18),
-//            genreImageView.heightAnchor.constraint(equalToConstant: 18),
+            genreImageView.widthAnchor.constraint(equalToConstant: 18),
+            genreImageView.heightAnchor.constraint(equalToConstant: 18),
             
             // Main StackView 위치 조정
             infoStackView.bottomAnchor.constraint(equalTo: openDropButton.topAnchor, constant: -24),
@@ -189,7 +192,7 @@ final class DropController: UIViewController {
     
     private func configureInitialView() {
         //         DropView에 기본 정보 업데이트
-        dropView.dropSettingView(genre: circleData.genre.localized(), rarity: circleData.rarity.rawValue)
+        dropView.dropSettingView(channel: circleData.channel.localized(), rarity: circleData.rarity.rawValue)
     }
     
     private func startDropViewAnimation() {
@@ -264,7 +267,7 @@ final class DropController: UIViewController {
         VideoLayerMapManager(mapView: mapView).updateVideoCircleLayer(for: circleData)
 
         
-        CollectionService.shared.fetchRandomVideoByGenre(genre: circleData.genre, rarity: circleData.rarity) { result in
+        CollectionService.shared.fetchRandomVideoByChannel(channel: circleData.channel, rarity: circleData.rarity) { result in
 
             DispatchQueue.main.async {
                 self.isFetchCompleted = true // 🔥 Fetch 완료 시 플래그 변경
@@ -293,7 +296,7 @@ final class DropController: UIViewController {
         
         // 애니메이션 시퀀스 실행
         self.animateImageSequence { [weak self] in
-            guard let self = self else { return }
+            guard self != nil else { return }
             print("🎥 Image animation completed, waiting for video fetch...")
         }
     }
@@ -405,22 +408,3 @@ final class DropController: UIViewController {
     }
     
 }
-
-
-
-//        CollectionService.shared.fetchUncollectedVideos(for: genre, rarity: rarity) { [weak self] result in
-//            DispatchQueue.main.async {
-//                switch result {
-//                case .success(let filteredVideos):
-//                    guard let video = filteredVideos.randomElement() else {
-//                        print("⚠️ No videos available")
-//                        return
-//                    }
-//                    self?.selectedVideo = video
-//                    CollectionService.shared.saveCollectedVideo(video)
-//                    self?.startImageAnimation()
-//                case .failure(let error):
-//                    print("❌ 비디오 가져오기 실패: \(error.localizedDescription)")
-//                }
-//            }
-//        }

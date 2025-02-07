@@ -11,6 +11,7 @@ import FirebaseAuth
 import FirebaseFirestore
 import CryptoKit
 
+@MainActor
 class LoginService: ObservableObject {
     static let shared = LoginService()
     
@@ -49,9 +50,10 @@ class LoginService: ObservableObject {
         
         let idTokenString = String(data: appleIDToken, encoding: .utf8)
         let firebaseCredential = OAuthProvider.credential(
-            withProviderID: "apple.com",
+            providerID: AuthProviderID.apple, // 🔥 문자열 대신 AuthProviderID 사용
             idToken: idTokenString ?? "",
-            rawNonce: nonce
+            rawNonce: nonce,
+            accessToken: nil
         )
         
         do {
@@ -96,8 +98,8 @@ class LoginService: ObservableObject {
         // ✅ Firestore → UserDefaults로 `playlists` 동기화 (새로 추가)
         await PlaylistService.shared.syncPlaylistsWithFirestore()
         
-        DispatchQueue.main.async {
-            self.isUserInitialized = true
+        DispatchQueue.main.async { [weak self] in
+            self?.isUserInitialized = true
         }
     }
     
@@ -171,7 +173,7 @@ class LoginService: ObservableObject {
             "email": userData.email,
             "nickname": userData.nickname,
             "profileImageURL": userData.profileImageURL ?? "",
-            "bio": userData.bio,
+            "bio": userData.bio ?? "",
             "experience": userData.experience,
             "balance": userData.balance,
             "gems": userData.gems
