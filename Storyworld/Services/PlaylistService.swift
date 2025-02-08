@@ -203,55 +203,42 @@ class PlaylistService {
             print("❌ Firestore에서 playlists 불러오기 실패: \(error.localizedDescription)")
         }
     }
-    
-    func uploadPlaylistThumbnail(playlist: Playlist, image: UIImage, completion: @escaping (URL?) -> Void) {
+    @Published var isUploading = false // ✅ 업로드 상태 추적
+
+    func uploadPlaylistThumbnail(playlist: Playlist, image: UIImage) async {
         guard let currentUser = Auth.auth().currentUser else {
             print("❌ 로그인된 유저가 없습니다.")
-            completion(nil)
             return
         }
-        
+
         // ✅ 1) 로컬 저장 (즉시 반영)
         self.savePlaylistImageLocally(playlist.id, image: image)
-        
-        // ✅ 2) 이미지 최적화 후 Firebase Storage에 업로드
-        let resizedImage = image.resized(toWidth: 600)
+
+        // ✅ 2) Firebase Storage에 업로드
+        let resizedImage = image.resized(toWidth: 200)
         guard let imageData = resizedImage.jpegData(compressionQuality: 0.7) else {
             print("❌ 이미지 JPEG 변환 실패")
-            completion(nil)
             return
         }
-        
+
         let storageRef = Storage.storage().reference()
         let playlistImageRef = storageRef.child("playlist_images/\(currentUser.uid)_\(playlist.id).jpg")
-        
-        playlistImageRef.putData(imageData, metadata: nil) { metadata, error in
-            if let error = error {
-                print("❌ 썸네일 업로드 실패: \(error.localizedDescription)")
-                completion(nil)
-                return
+
+        do {
+            let _ = try await playlistImageRef.putDataAsync(imageData) // ✅ async 업로드
+            let downloadURL = try await playlistImageRef.downloadURL() // ✅ 업로드 후 URL 가져오기
+
+            // ✅ Firestore 업데이트
+            await updatePlaylistThumbnailURL(playlist: playlist, url: downloadURL)
+
+            print("✅ 썸네일 업로드 완료: \(downloadURL)")
+
+            // ✅ 변경 사항을 NotificationCenter로 알림
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .playlistUpdated, object: nil, userInfo: ["playlistID": playlist.id, "image": image])
             }
-            
-            // ✅ 3) Firestore에 URL 저장
-            playlistImageRef.downloadURL { url, error in
-                if let error = error {
-                    print("❌ 다운로드 URL 가져오기 실패: \(error.localizedDescription)")
-                    completion(nil)
-                    return
-                }
-                
-                guard let downloadURL = url else {
-                    completion(nil)
-                    return
-                }
-                
-                // ✅ Firestore에 저장
-                Task {
-                    await self.updatePlaylistThumbnailURL(playlist: playlist, url: downloadURL)
-                }
-                
-                completion(downloadURL)
-            }
+        } catch {
+            print("❌ 썸네일 업로드 실패: \(error.localizedDescription)")
         }
     }
     
@@ -259,19 +246,19 @@ class PlaylistService {
     func updatePlaylistThumbnailURL(playlist: Playlist, url: URL) async {
         var updatedPlaylist = playlist
         updatedPlaylist.thumbnailURL = url.absoluteString
-        
-        // ✅ 1. UserDefaults 업데이트
-        var playlists = loadPlaylists()
+
+        // ✅ 1. UserDefaults에서 개별 업데이트
+        var playlists = UserDefaults.standard.loadPlaylists()
         if let index = playlists.firstIndex(where: { $0.id == playlist.id }) {
             playlists[index].thumbnailURL = url.absoluteString
+            UserDefaults.standard.savePlaylists(playlists) // 🔥 특정 플레이리스트만 저장
         }
-        await savePlaylists(playlists)
-        
+
         // ✅ 2. Firestore 업데이트
         await updatePlaylistInFirestore(updatedPlaylist)
-        
-        print("✅ 플레이리스트 썸네일 URL 업데이트 완료: \(url.absoluteString)")
-        
+
+        print("✅ 특정 플레이리스트의 썸네일 URL 업데이트 완료: \(url.absoluteString)")
+
         // ✅ 3. 변경 사항을 Notification으로 전달 (뷰 업데이트 트리거)
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: .playlistUpdated, object: nil)

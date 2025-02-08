@@ -114,10 +114,10 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         // ✅ 위치 변화 감지 (이전 위치와 비교)
         if let lastLocation = lastUpdatedLocation {
             let distance = userLocation.distance(from: lastLocation)
-            print("📏 이동 거리: \(String(format: "%.2f", distance))m")
+//            print("📏 이동 거리: \(String(format: "%.2f", distance))m")
             
             if distance < minimumDistanceThreshold {
-                print("⚠️ 위치 변화가 미미함, 업데이트 생략")
+//                print("⚠️ 위치 변화가 미미함, 업데이트 생략")
                 return
             }
         }

@@ -21,8 +21,9 @@ struct PlaylistAllView: View {
                 }
             } else {
                 LazyVStack(spacing: 12) {
-                    ForEach(viewModel.playlists ?? [], id: \.id) { playlist in
+                    ForEach(viewModel.playlists, id: \.id) { playlist in
                         Button(action: {
+                            UIImpactFeedbackGenerator.trigger(.light)
                             sheetManager.presentPlaylistDetail(for: playlist)
                         }) {
                             PlaylistItemView(playlist: playlist)

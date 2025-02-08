@@ -97,7 +97,7 @@ class UserService: ObservableObject {
     func uploadProfileImage(_ image: UIImage, completion: @escaping (URL?) -> Void) {
         guard let user = self.user else { return }
         
-        let optimizedImage = image.resized(toWidth: 300)
+        let optimizedImage = image.resized(toWidth: 200)
         guard let imageData = optimizedImage.jpegData(compressionQuality: 0.5) else { return }
         
         let storageRef = Storage.storage().reference()

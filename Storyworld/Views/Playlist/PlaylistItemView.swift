@@ -13,7 +13,7 @@ struct PlaylistItemView: View {
                         .resizable()
                         .scaledToFill()
                         .frame(width: 80, height: 80)
-                        .clipShape(Circle())
+                        .cornerRadius(10)
                         .shadow(radius: 5)
                 }
                 // ✅ 2. Firebase에서 썸네일 다운로드
@@ -23,7 +23,7 @@ struct PlaylistItemView: View {
                             .resizable()
                             .scaledToFill()
                             .frame(width: 80, height: 80)
-                            .clipShape(Circle())
+                            .cornerRadius(10)
                             .shadow(radius: 5)
                     } placeholder: {
                         ProgressView()
@@ -36,7 +36,7 @@ struct PlaylistItemView: View {
                         .resizable()
                         .scaledToFill()
                         .frame(width: 80, height: 80)
-                        .clipShape(Circle())
+                        .cornerRadius(10)
                         .shadow(radius: 5)
                 }
             }

@@ -37,6 +37,7 @@ struct PlaylistDetailedView: View {
                 HStack {
                     ZStack {
                         Button(action: {
+                            UIImpactFeedbackGenerator.trigger(.light)
                             checkPermission(for: .photoLibrary) { granted in
                                 if granted {
                                     isShowingPlaylistImagePicker = true
@@ -51,7 +52,7 @@ struct PlaylistDetailedView: View {
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: 80, height: 80)
-                                    .clipShape(Circle()) // 동그랗게 표시
+                                    .cornerRadius(10)
                                     .shadow(radius: 5)
                             } else if let urlString = currentPlaylist.thumbnailURL, let url = URL(string: urlString) {
                                 // ✅ Firebase Storage URL로부터 다운로드
@@ -60,7 +61,7 @@ struct PlaylistDetailedView: View {
                                         .resizable()
                                         .scaledToFill()
                                         .frame(width: 80, height: 80)
-                                        .clipShape(Circle())
+                                        .cornerRadius(10)
                                         .shadow(radius: 5)
                                 } placeholder: {
                                     ProgressView()
@@ -72,7 +73,7 @@ struct PlaylistDetailedView: View {
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: 80, height: 80)
-                                    .clipShape(Circle())
+                                    .cornerRadius(10)
                                     .shadow(radius: 5)
                             }
                         }
@@ -206,7 +207,7 @@ struct PlaylistDetailedView: View {
             .onAppear {
                 loadPlaylistImage()
             }
-            .onChange(of: playlist.id) { _ in
+            .onChange(of: playlist.id) {
                 loadPlaylistImage()
             }
             .alert("플레이리스트 이름 변경", isPresented: $showTitleAlert) {
@@ -262,7 +263,6 @@ struct PlaylistDetailedView: View {
         }
     }
     
-    // MARK: - 이미지를 고른 뒤 업로드 처리
     private func handlePlaylistImageSelection() {
         guard let selectedImage = selectedPlaylistImage else { return }
 
@@ -272,17 +272,14 @@ struct PlaylistDetailedView: View {
         // ✅ 2) 로컬 파일에도 즉시 저장
         PlaylistService.shared.savePlaylistImageLocally(currentPlaylist.id, image: selectedImage)
 
-        // ✅ 3) Firebase Storage에 업로드 (비동기 처리)
+        // ✅ 3) Firebase Storage에 업로드 (백그라운드에서 실행)
         isUploadingThumbnail = true
-        PlaylistService.shared.uploadPlaylistThumbnail(playlist: currentPlaylist, image: selectedImage) { url in
+        
+        Task.detached { // ✅ 백그라운드에서 실행
+            await PlaylistService.shared.uploadPlaylistThumbnail(playlist: currentPlaylist, image: selectedImage)
+            
             DispatchQueue.main.async {
                 self.isUploadingThumbnail = false
-            }
-            guard let url = url else { return }
-
-            // ✅ Firestore 업데이트 (thumbnailURL 동기화)
-            DispatchQueue.main.async {
-                self.currentPlaylist.thumbnailURL = url.absoluteString
             }
         }
     }
