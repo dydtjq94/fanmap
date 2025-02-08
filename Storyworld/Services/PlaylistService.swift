@@ -45,7 +45,7 @@ class PlaylistService {
         
         do {
             for playlist in playlists {
-                try await userRef.collection("playlists").document(playlist.id).setData(from: playlist)
+                try userRef.collection("playlists").document(playlist.id).setData(from: playlist)
             }
             print("🔥 Firestore에 플레이리스트 저장 완료!")
         } catch {
@@ -172,7 +172,7 @@ class PlaylistService {
         let playlistRef = userRef.collection("playlists").document(playlist.id)
         
         do {
-            try await playlistRef.setData(from: playlist)
+            try playlistRef.setData(from: playlist)
             print("🔥 Firestore에서 플레이리스트 업데이트 완료! ID: \(playlist.id)")
         } catch {
             print("❌ Firestore에서 플레이리스트 업데이트 실패: \(error.localizedDescription)")

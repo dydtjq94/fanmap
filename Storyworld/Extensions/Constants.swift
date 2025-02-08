@@ -11,7 +11,7 @@ struct Constants {
     struct Numbers {
         static let searchFixedZoomLevel: Double = 18.0
         static let searchFixedSideLength: Double = 1650.0
-        static let searchProbability: Double = 0.35
+        static let searchProbability: Double = 0.3
         
         static let defaultZoomLevel: Double = 14.6
         static let firstZoom: Double = 17.2

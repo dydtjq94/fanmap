@@ -49,8 +49,6 @@ final class VideoController {
             return
         }
         
-        print("circledata: \(circleData)")
-        
         guard let userLocation = mapView.location.latestLocation?.coordinate else {
             print("⚠️ 사용자 위치를 가져올 수 없습니다.")
             return

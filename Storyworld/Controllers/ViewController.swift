@@ -114,10 +114,8 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         // ✅ 위치 변화 감지 (이전 위치와 비교)
         if let lastLocation = lastUpdatedLocation {
             let distance = userLocation.distance(from: lastLocation)
-//            print("📏 이동 거리: \(String(format: "%.2f", distance))m")
             
             if distance < minimumDistanceThreshold {
-//                print("⚠️ 위치 변화가 미미함, 업데이트 생략")
                 return
             }
         }
@@ -148,7 +146,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         cameraManager?.configureGestureOptions() // ✅ 여기서 확실히 설정 적용
         mapStyleManager = MapStyleManager(mapView: mapView)
         videoLayerMapManager = VideoLayerMapManager(mapView: mapView)
-        videoLayerMapManager.startCooldownUpdate()
+//        videoLayerMapManager.startCooldownUpdate()
         videoController = VideoController(mapView: mapView)
         
         scanManager = ScanManager(
@@ -165,7 +163,7 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
         
         // ✅ 초기 위치에서도 타일 추가 실행
         cameraManager?.moveCameraToCurrentLocation(location: coordinate, zoomLevel: Constants.Numbers.defaultZoomLevel)
-        locationCircleManager.addCircleLayers(to: mapView, at: coordinate)
+//        locationCircleManager.addCircleLayers(to: mapView, at: coordinate)
     }
     
     private func configureUserLocationDisplay() {
@@ -300,7 +298,6 @@ final class ViewController: UIViewController, CLLocationManagerDelegate {
                 }
                 
                 self.moveCameraToCurrentLocation()
-                // 타일 데이터 로드 및 Circle 레이어 추가
                 self.loadTilesAndAddCircles(at: coordinate)
                 self.reloadLocationPuck()
             }

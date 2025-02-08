@@ -252,6 +252,7 @@ struct DropWithCoinView: View {
     
     // ✅ fetch 완료될 때까지 이미지 애니메이션 유지
     private func fetchVideosAndAnimate(completion: @escaping (Video?) -> Void) {
+        
         CollectionService.shared.fetchRandomVideoByChannel(channel: circleData.channel, rarity: circleData.rarity) { result in
             DispatchQueue.main.async {
                 switch result {

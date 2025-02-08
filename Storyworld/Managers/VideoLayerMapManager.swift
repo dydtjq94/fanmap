@@ -16,7 +16,7 @@ final class VideoLayerMapManager {
     
     init(mapView: MapView) {
         self.mapView = mapView
-        startCooldownUpdate() // ✅ 초기화 시 타이머 시작
+//        startCooldownUpdate() // ✅ 초기화 시 타이머 시작
     }
     
     func addGenreCircles(data: [CircleData], userLocation: CLLocationCoordinate2D, isScan: Bool = false) {
@@ -195,23 +195,22 @@ final class VideoLayerMapManager {
         }
     }
     
-    func startCooldownUpdate() {
-        updateTimer?.invalidate() // 기존 타이머 제거
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 600.0, repeats: true) { [weak self] _ in
-            self?.refreshAllTiles()
-        }
-    }
+//    func startCooldownUpdate() {
+//        updateTimer?.invalidate() // 기존 타이머 제거
+//        updateTimer = Timer.scheduledTimer(withTimeInterval: 1800.0, repeats: true) { [weak self] _ in
+//            self?.refreshAllTiles()
+//        }
+//    }
     
     // ✅ 현재 보이는 모든 타일을 업데이트
-    func refreshAllTiles() {
-        let visibleTiles = tileService.getAllVisibleTiles() // 🔥 현재 보이는 타일 가져오기
-        for tile in visibleTiles {
-            for circle in tile.layerData {
-                self.updateVideoCircleLayer(for: circle) // 🔥 쿨다운 적용한 circle 업데이트
-            }
-        }
-    }
-    
+//    func refreshAllTiles() {
+//        let visibleTiles = tileService.getAllVisibleTiles() // 🔥 현재 보이는 타일 가져오기
+//        for tile in visibleTiles {
+//            for circle in tile.layerData {
+//                self.updateVideoCircleLayer(for: circle) // 🔥 쿨다운 적용한 circle 업데이트
+//            }
+//        }
+//    }
     
     func removeAllVideoLayers() {
         do {
@@ -237,12 +236,10 @@ final class VideoLayerMapManager {
     
     // MARK: - 특정 CircleData만 업데이트
     func updateVideoCircleLayer(for circleData: CircleData) {
-        print("👌 map 강제 업데이트중")
         let tileKey = circleData.tileKey
         let sourceId = "source-\(tileKey)"
         
         print("👌 map 강제 업데이트중 - TileKey: \(tileKey), Source ID: \(sourceId)")
-        
         
         guard let tileInfo = tileService.getTileInfo(for: Tile.fromKey(tileKey)!) else {
             print("⚠️ \(tileKey)에 해당하는 타일 정보가 없습니다.")
@@ -281,6 +278,5 @@ final class VideoLayerMapManager {
             geoJSON: .featureCollection(Turf.FeatureCollection(features: features))
         )
         print("🔄 특정 CircleData 업데이트 완료: \(circleData.id) on \(tileKey)")
-        
     }
 }

@@ -34,11 +34,19 @@ struct CollectionItemView: View {
                     .foregroundColor(Color(UIColor(hex:"#ffffff")))
                     .padding(.bottom, 1)
                 
-                Text(VideoChannel.getChannelName(by: collectedVideo.video.channelId))
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(Color(UIColor(hex:"#CECECE")))
-                    .lineLimit(1)
-                    .padding(.bottom, 2)
+                HStack(spacing: 4) {
+                    Image(VideoChannel.getChannelImageName(by: collectedVideo.video.channelId)) // 🔥 채널 프로필 이미지 사용
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 12, height: 12)
+                        .clipShape(Circle()) // 🔥 원형으로 변환
+                    
+                    Text(VideoChannel.getChannelName(by: collectedVideo.video.channelId))
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(Color.white)
+                        .lineLimit(1)
+                }
+                .padding(.bottom, 2)
                 
                 // 희귀도 UI 적용
                 RarityBadgeView(rarity: collectedVideo.video.rarity)

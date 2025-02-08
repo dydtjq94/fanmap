@@ -189,32 +189,28 @@ final class TileService {
     
     /// 특정 CircleData의 tileKey를 기반으로 lastDropTime 업데이트
     func updateLastDropTime(for circleData: CircleData) {
-        let tileKey = circleData.tileKey  // 🔥 tileKey를 가져옴
+        let tileKey = circleData.tileKey
 
         guard var tileInfo = tileData[tileKey] else {
             print("⚠️ \(tileKey)에 해당하는 타일 정보가 없습니다.")
             return
         }
 
-        // 🔥 해당 타일의 CircleData를 업데이트
-        let updatedLayerData = tileInfo.layerData.map { circle -> CircleData in
-            if circle.id == circleData.id {
-                // 같은 CircleData를 찾으면 lastDropTime 업데이트
-                var updatedCircle = circle
-                updatedCircle.lastDropTime = Date()  // 현재 시간으로 설정
-                print("✅ CircleData 업데이트 완료: \(updatedCircle.id), lastDropTime: \(updatedCircle.lastDropTime!)")
-                return updatedCircle
-            } else {
-                return circle
+        // 🔥 해당 타일의 CircleData를 즉시 업데이트
+        for i in 0..<tileInfo.layerData.count {
+            if tileInfo.layerData[i].id == circleData.id {
+                tileInfo.layerData[i].lastDropTime = Date()
+                print("✅ CircleData 업데이트 완료: \(tileInfo.layerData[i].id), lastDropTime: \(tileInfo.layerData[i].lastDropTime!)")
+                break
             }
         }
 
-        // 업데이트된 데이터를 저장
-        tileInfo.layerData = updatedLayerData
-        tileData[tileKey] = tileInfo  // 변경된 tileInfo 저장
+        // 🔥 즉시 tileData에 반영
+        tileData[tileKey] = tileInfo
         saveTileData()  // UserDefaults에 저장
 
-        print("💾 타일 데이터 업데이트 완료: \(tileKey)")
+        // ✅ 🔥 업데이트 후 바로 최신 데이터 반환
+        print("💾 즉시 반영된 타일 데이터: \(tileData[tileKey]!)")
     }
     
     /// 🔹 현재 보이는 (isVisible == true) 타일 목록 반환

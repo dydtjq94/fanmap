@@ -31,13 +31,13 @@ struct ContentView: View {
             }
             .tag(1)
             
-            NavigationView {
-                QuestTab()
-            }
-            .tabItem {
-                Label("퀘스트", systemImage: "lasso.badge.sparkles")
-            }
-            .tag(2)
+//            NavigationView {
+//                QuestTab()
+//            }
+//            .tabItem {
+//                Label("퀘스트", systemImage: "lasso.badge.sparkles")
+//            }
+//            .tag(2)
             
             NavigationView {
                 ProfileTab()

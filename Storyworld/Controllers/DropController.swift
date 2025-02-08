@@ -261,14 +261,11 @@ final class DropController: UIViewController {
     private func fetchVideosAndAnimate(completion: @escaping (Video?) -> Void) {
         // 🔥 타일 데이터 업데이트
         TileService().updateLastDropTime(for: circleData)
-        // ✅ DropController에서 직접 지도 업데이트
 
         // ✅ mapView를 이용해서 VideoLayerMapManager 생성 후 업데이트 실행
         VideoLayerMapManager(mapView: mapView).updateVideoCircleLayer(for: circleData)
 
-        
         CollectionService.shared.fetchRandomVideoByChannel(channel: circleData.channel, rarity: circleData.rarity) { result in
-
             DispatchQueue.main.async {
                 self.isFetchCompleted = true // 🔥 Fetch 완료 시 플래그 변경
                 

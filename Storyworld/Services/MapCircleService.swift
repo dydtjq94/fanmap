@@ -13,10 +13,12 @@ final class MapCircleService {
     
     func createFilteredCircleData(visibleTiles: [Tile], tileManager: TileManager) -> [CircleData] {
         var filteredCircles: [CircleData] = []
-//        let channels: [VideoChannel] = VideoChannel.allCases
+        let channels: [VideoChannel] = VideoChannel.allCases
         
         // 🔥 특정 채널만 선택 (침착맨 & 우왁굳)
-        let channels: [VideoChannel] = [.chimchakMan, .wowakGood, .wooJungIng]
+//        let channels: [VideoChannel] = [.chimchakMan, .wowakGood, .wooJungIng]
+        
+        
         let rarityProbabilities: [(VideoRarity, Double)] = VideoRarity.allCases.map { ($0, $0.probability) }
         let fixedZoomLevel = Constants.Numbers.searchFixedZoomLevel
 
