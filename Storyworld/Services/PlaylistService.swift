@@ -20,7 +20,6 @@ class PlaylistService {
             print("❌ 로그인된 사용자 없음")
             return nil
         }
-
         
         let newPlaylist = Playlist(
             id: UUID().uuidString,
@@ -32,7 +31,7 @@ class PlaylistService {
             defaultThumbnailName: "default_playlist_image1",
             ownerId: currentUser.uid
         )
-
+        
         await addPlaylist(newPlaylist) // ✅ Firestore & UserDefaults에 저장
         return newPlaylist // ✅ 생성한 플레이리스트 반환
     }
@@ -46,7 +45,7 @@ class PlaylistService {
         
         do {
             for playlist in playlists {
-                try userRef.collection("playlists").document(playlist.id).setData(from: playlist)
+                try await userRef.collection("playlists").document(playlist.id).setData(from: playlist)
             }
             print("🔥 Firestore에 플레이리스트 저장 완료!")
         } catch {
@@ -55,7 +54,30 @@ class PlaylistService {
     }
     
     func loadPlaylists() -> [Playlist] {
-        return UserDefaults.standard.loadPlaylists()
+        var playlists = UserDefaults.standard.loadPlaylists()
+        
+        // ✅ 플레이리스트별로 이미지 로드
+        for index in playlists.indices {
+            let playlistID = playlists[index].id
+            
+            // ✅ 1. 로컬에 저장된 이미지 불러오기
+            if let localImage = PlaylistService.shared.loadPlaylistImageLocally(playlistID) {
+                playlists[index].thumbnailURL = nil // 로컬 이미지 사용
+                print("✅ 로컬에서 플레이리스트 이미지 로드 완료")
+                
+                // ✅ 2. 로컬에 없으면 Firebase에서 다운로드
+            } else if let urlString = playlists[index].thumbnailURL, let url = URL(string: urlString) {
+                PlaylistService.shared.downloadImage(from: url, for: playlistID) { image in
+                    if let downloadedImage = image {
+                        // ✅ 다운로드된 이미지를 로컬에 저장
+                        PlaylistService.shared.savePlaylistImageLocally(playlistID, image: downloadedImage)
+                        print("✅ Firebase에서 다운로드 후 로컬 저장 완료")
+                    }
+                }
+            }
+        }
+        
+        return playlists
     }
     
     func addPlaylist(_ playlist: Playlist) async {
@@ -150,7 +172,7 @@ class PlaylistService {
         let playlistRef = userRef.collection("playlists").document(playlist.id)
         
         do {
-            try playlistRef.setData(from: playlist)
+            try await playlistRef.setData(from: playlist)
             print("🔥 Firestore에서 플레이리스트 업데이트 완료! ID: \(playlist.id)")
         } catch {
             print("❌ Firestore에서 플레이리스트 업데이트 실패: \(error.localizedDescription)")
@@ -182,76 +204,152 @@ class PlaylistService {
         }
     }
     
-    /// ✅ 플레이리스트 썸네일 이미지 업로드
-       func uploadPlaylistThumbnail(playlist: Playlist, image: UIImage, completion: @escaping (URL?) -> Void) {
-           // 로그인 유저 확인
-           guard let currentUser = Auth.auth().currentUser else {
-               print("❌ 로그인된 유저가 없습니다.")
-               completion(nil)
-               return
-           }
-           
-           // 1) 이미지 최적화 (선택적으로 크기 조정 & 압축)
-           let resizedImage = image.resized(toWidth: 600)  // 600px 너비로 리사이즈 예시
-           guard let imageData = resizedImage.jpegData(compressionQuality: 0.7) else {
-               print("❌ 이미지 JPEG 변환 실패")
-               completion(nil)
-               return
-           }
-           
-           // 2) Firebase Storage 참조
-           let storageRef = Storage.storage().reference()
-           let playlistImageRef = storageRef.child("playlist_images/\(currentUser.uid)_\(playlist.id).jpg")
-           
-           // 3) 업로드
-           playlistImageRef.putData(imageData, metadata: nil) { metadata, error in
-               if let error = error {
-                   print("❌ 썸네일 업로드 실패: \(error.localizedDescription)")
-                   completion(nil)
-                   return
-               }
-               
-               // 4) 다운로드 URL 가져오기
-               playlistImageRef.downloadURL { url, error in
-                   if let error = error {
-                       print("❌ 다운로드 URL 가져오기 실패: \(error.localizedDescription)")
-                       completion(nil)
-                       return
-                   }
-                   
-                   guard let downloadURL = url else {
-                       completion(nil)
-                       return
-                   }
-                   
-                   // 5) Firestore의 thumbnailURL 업데이트
-                   Task {
-                       await self.updatePlaylistThumbnailURL(playlist: playlist, url: downloadURL)
-                   }
-                   
-                   completion(downloadURL)
-               }
-           }
-       }
-       
-       /// ✅ Firestore의 playlist.thumbnailURL 업데이트
-       func updatePlaylistThumbnailURL(playlist: Playlist, url: URL) async {
-           var updatedPlaylist = playlist
-           updatedPlaylist.thumbnailURL = url.absoluteString
-           
-           // 1) UserDefaults 업데이트
-           var playlists = loadPlaylists()
-           if let index = playlists.firstIndex(where: { $0.id == playlist.id }) {
-               playlists[index].thumbnailURL = url.absoluteString
-           }
-           await savePlaylists(playlists)
-           
-           // 2) Firestore 업데이트
-           await updatePlaylistInFirestore(updatedPlaylist)
-           
-           print("✅ 플레이리스트 썸네일 URL 업데이트 완료: \(url.absoluteString)")
-       }
-
+    func uploadPlaylistThumbnail(playlist: Playlist, image: UIImage, completion: @escaping (URL?) -> Void) {
+        guard let currentUser = Auth.auth().currentUser else {
+            print("❌ 로그인된 유저가 없습니다.")
+            completion(nil)
+            return
+        }
+        
+        // ✅ 1) 로컬 저장 (즉시 반영)
+        self.savePlaylistImageLocally(playlist.id, image: image)
+        
+        // ✅ 2) 이미지 최적화 후 Firebase Storage에 업로드
+        let resizedImage = image.resized(toWidth: 600)
+        guard let imageData = resizedImage.jpegData(compressionQuality: 0.7) else {
+            print("❌ 이미지 JPEG 변환 실패")
+            completion(nil)
+            return
+        }
+        
+        let storageRef = Storage.storage().reference()
+        let playlistImageRef = storageRef.child("playlist_images/\(currentUser.uid)_\(playlist.id).jpg")
+        
+        playlistImageRef.putData(imageData, metadata: nil) { metadata, error in
+            if let error = error {
+                print("❌ 썸네일 업로드 실패: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            // ✅ 3) Firestore에 URL 저장
+            playlistImageRef.downloadURL { url, error in
+                if let error = error {
+                    print("❌ 다운로드 URL 가져오기 실패: \(error.localizedDescription)")
+                    completion(nil)
+                    return
+                }
+                
+                guard let downloadURL = url else {
+                    completion(nil)
+                    return
+                }
+                
+                // ✅ Firestore에 저장
+                Task {
+                    await self.updatePlaylistThumbnailURL(playlist: playlist, url: downloadURL)
+                }
+                
+                completion(downloadURL)
+            }
+        }
+    }
+    
+    /// ✅ Firestore의 playlist.thumbnailURL 업데이트
+    func updatePlaylistThumbnailURL(playlist: Playlist, url: URL) async {
+        var updatedPlaylist = playlist
+        updatedPlaylist.thumbnailURL = url.absoluteString
+        
+        // ✅ 1. UserDefaults 업데이트
+        var playlists = loadPlaylists()
+        if let index = playlists.firstIndex(where: { $0.id == playlist.id }) {
+            playlists[index].thumbnailURL = url.absoluteString
+        }
+        await savePlaylists(playlists)
+        
+        // ✅ 2. Firestore 업데이트
+        await updatePlaylistInFirestore(updatedPlaylist)
+        
+        print("✅ 플레이리스트 썸네일 URL 업데이트 완료: \(url.absoluteString)")
+        
+        // ✅ 3. 변경 사항을 Notification으로 전달 (뷰 업데이트 트리거)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .playlistUpdated, object: nil)
+        }
+    }
+    
+    // ✅ Documents 디렉토리 경로
+    private func getDocumentsDirectory() -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    }
+    
+    /// ✅ 로컬에 플레이리스트 이미지를 저장
+    func savePlaylistImageLocally(_ playlistID: String, image: UIImage) {
+        let fileURL = getDocumentsDirectory().appendingPathComponent("playlist_\(playlistID).jpg")
+        
+        // 압축하여 저장
+        if let data = image.jpegData(compressionQuality: 0.8) {
+            do {
+                try data.write(to: fileURL)
+                print("✅ 플레이리스트 이미지 로컬 저장 완료: \(fileURL.path)")
+            } catch {
+                print("❌ 플레이리스트 이미지 로컬 저장 실패: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    /// ✅ 로컬에서 플레이리스트 이미지 불러오기
+    func loadPlaylistImageLocally(_ playlistID: String) -> UIImage? {
+        let fileURL = getDocumentsDirectory().appendingPathComponent("playlist_\(playlistID).jpg")
+        
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+        
+        do {
+            let data = try Data(contentsOf: fileURL)
+            return UIImage(data: data)
+        } catch {
+            print("❌ 로컬 플레이리스트 이미지 로드 실패: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    func downloadImage(from url: URL, for playlistID: String, completion: @escaping (UIImage?) -> Void) {
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            if let data = data, let image = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    // ✅ 이미지 다운로드 성공 후, 즉시 로컬에 저장
+                    self.savePlaylistImageLocally(playlistID, image: image)
+                    completion(image)
+                }
+            } else {
+                print("❌ 이미지 다운로드 실패: \(error?.localizedDescription ?? "알 수 없는 오류")")
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+            }
+        }.resume()
+    }
+    
+    func loadPlaylistImage(_ playlistID: String) {
+        // ✅ 1) 로컬 캐시된 이미지 먼저 적용
+        if let localImage = loadPlaylistImageLocally(playlistID) {
+            print("✅ 로컬에서 플레이리스트 이미지 로드 완료: \(playlistID)")
+            
+            // ✅ 2) 로컬에 없으면 Firebase에서 다운로드
+        } else if let playlist = UserDefaults.standard.loadPlaylists().first(where: { $0.id == playlistID }),
+                  let urlString = playlist.thumbnailURL,
+                  let url = URL(string: urlString) {
+            
+            downloadImage(from: url, for: playlistID) { image in
+                if let downloadedImage = image {
+                    self.savePlaylistImageLocally(playlistID, image: downloadedImage)
+                    print("✅ Firebase에서 다운로드 후 로컬 저장 완료: \(playlistID)")
+                }
+            }
+        }
+    }
 }
 
 extension Notification.Name {

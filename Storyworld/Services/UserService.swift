@@ -93,44 +93,10 @@ class UserService: ObservableObject {
         }
     }
     
-    private let profileImageCacheKey = "cachedProfileImageURL"
-    
-    // Firestore에서 프로필 이미지 URL 가져오기 (UserDefaults에 캐싱)
-    func fetchProfileImageURLIfNeeded() async {
-        guard let user = self.user else { return }
-        
-        // ✅ 1. UserDefaults에서 캐싱된 URL 확인
-        if let cachedURL = UserDefaults.standard.string(forKey: profileImageCacheKey) {
-            DispatchQueue.main.async { [weak self] in
-                self?.user?.profileImageURL = cachedURL
-            }
-            print("✅ 캐싱된 프로필 이미지 URL 사용: \(cachedURL)")
-            return
-        }
-        
-        // ✅ 2. Firestore에서 가져오고 캐싱
-        let db = Firestore.firestore()
-        let userRef = db.collection("users").document(user.id)
-        
-        do {
-            let snapshot = try await userRef.getDocument()
-            if let data = snapshot.data(), let profileURL = data["profileImageURL"] as? String {
-                DispatchQueue.main.async {
-                    self.user?.profileImageURL = profileURL
-                    UserDefaults.standard.set(profileURL, forKey: self.profileImageCacheKey) // ✅ 캐싱
-                }
-                print("✅ Firestore에서 가져온 프로필 이미지 URL: \(profileURL)")
-            }
-        } catch {
-            print("❌ Firestore에서 프로필 이미지 URL 가져오기 실패: \(error.localizedDescription)")
-        }
-    }
-    
-    // Firebase Storage에 프로필 이미지 업로드 (최적화 적용)
+    // MARK: - 프로필 이미지 업로드
     func uploadProfileImage(_ image: UIImage, completion: @escaping (URL?) -> Void) {
         guard let user = self.user else { return }
         
-        // ✅ 이미지 최적화 (압축 및 크기 조정)
         let optimizedImage = image.resized(toWidth: 300)
         guard let imageData = optimizedImage.jpegData(compressionQuality: 0.5) else { return }
         
@@ -151,14 +117,15 @@ class UserService: ObservableObject {
                     return
                 }
                 
-                completion(url)
+                completion(url) // -> updateProfileImageURL에서 Firestore에 반영
             }
         }
     }
     
-    // Firestore에 프로필 이미지 URL 저장 (업데이트 시 캐시도 갱신)
+    // MARK: - Firestore에 프로필 이미지 URL 저장
     func updateProfileImageURL(imageURL: URL) {
         guard var user = self.user else { return }
+        
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(user.id)
         
@@ -168,37 +135,50 @@ class UserService: ObservableObject {
             } else {
                 print("✅ Firestore에 프로필 이미지 URL 저장 완료: \(imageURL)")
                 
-                // ✅ Firestore 저장 후 캐싱도 업데이트
                 DispatchQueue.main.async {
                     user.profileImageURL = imageURL.absoluteString
                     self.user = user
-                    UserDefaults.standard.set(imageURL.absoluteString, forKey: self.profileImageCacheKey)
-                    self.saveUser(user)
+                    self.saveUser(user) // -> UserDefaults에 전체 User 저장
+                    
+                    // ✅ (원한다면) 로컬 파일에 저장된 이미지와 URL을 동기화하는 로직을 넣어도 됨
                 }
             }
         }
     }
     
-    // ✅ 범용적인 프로필 이미지 로딩 함수
+    // MARK: - 프로필 이미지 로딩 (서버에서 URL만 쓴다)
     func loadProfileImage(completion: @escaping (UIImage?) -> Void) {
-        guard let profileURL = user?.profileImageURL, let url = URL(string: profileURL) else {
+        // 1) 로컬 파일 먼저 확인
+        if let localImage = loadProfileImageLocally() {
+            print("✅ 로컬 프로필 이미지 사용")
+            completion(localImage)
+            // 여기서 return하지 않고 "최신 버전"을 위해 서버 다운로드도 할 수 있음 (원한다면)
+            return
+        }
+        
+        // 2) 로컬에 없다면, Firestore에 있는 URL로 다운로드
+        guard let user = self.user,
+              let profileURLString = user.profileImageURL,
+              let url = URL(string: profileURLString) else {
             completion(nil)
             return
         }
         
-        // ✅ 캐시된 이미지가 있다면 즉시 반환
-        if let cachedImage = ImageCache.shared.get(forKey: profileURL) {
-            print("✅ 캐싱된 프로필 이미지 로드")
-            completion(cachedImage)
-        } else {
-            // ✅ 없으면 다운로드 후 캐싱
-            downloadImage(from: url) { image in
-                if let image = image {
-                    ImageCache.shared.set(image, forKey: profileURL) // ✅ 로컬 캐싱
+        print("🔍 로컬 파일이 없으므로 서버에서 다운로드 시도")
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            if let data = data, let image = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    // 로컬 파일로도 저장
+                    self.saveProfileImageLocally(image)
+                    completion(image)
                 }
-                completion(image)
+            } else {
+                print("❌ 프로필 이미지 서버 다운로드 실패: \(error?.localizedDescription ?? "")")
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
             }
-        }
+        }.resume()
     }
     
     // ✅ URL에서 이미지 다운로드하는 함수
@@ -213,6 +193,42 @@ class UserService: ObservableObject {
                 completion(nil)
             }
         }.resume()
+    }
+    
+    private func getDocumentsDirectory() -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    }
+    
+    /// ✅ 로컬에 프로필 이미지를 "profileImage.jpg"로 저장
+    func saveProfileImageLocally(_ image: UIImage) {
+        let fileURL = getDocumentsDirectory().appendingPathComponent("profileImage.jpg")
+        // 원하는 만큼 압축 품질 조정
+        if let data = image.jpegData(compressionQuality: 0.8) {
+            do {
+                try data.write(to: fileURL)
+                print("✅ 로컬에 프로필 이미지 저장 완료: \(fileURL.path)")
+            } catch {
+                print("❌ 프로필 이미지 로컬 저장 실패: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    /// ✅ 로컬에 저장된 프로필 이미지를 불러옴 (없으면 nil)
+    func loadProfileImageLocally() -> UIImage? {
+        let fileURL = getDocumentsDirectory().appendingPathComponent("profileImage.jpg")
+        
+        // 파일이 존재하는지 확인
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+        
+        do {
+            let data = try Data(contentsOf: fileURL)
+            return UIImage(data: data)
+        } catch {
+            print("❌ 로컬 프로필 이미지 로드 실패: \(error.localizedDescription)")
+            return nil
+        }
     }
     
     

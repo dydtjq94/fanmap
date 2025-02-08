@@ -44,6 +44,7 @@ struct CollectionAllView: View {
                 .padding(.horizontal)
             }
         }
+        .frame(maxWidth: .infinity)
         .background(Color(UIColor(hex:"#1D1D1D")))
         .toolbar(tabBarVisible ? .visible : .hidden, for: .tabBar)
         .onChange(of: isPresented) {

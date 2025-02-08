@@ -11,7 +11,6 @@ struct PlaylistAllView: View {
     var body: some View {
         ScrollView {
             if viewModel.playlists.isEmpty {
-                // ✅ 플레이리스트가 없을 때 표시되는 메시지
                 VStack {
                     Spacer()
                     Text("아직 만든 플레이리스트가 없어요!")
@@ -22,7 +21,7 @@ struct PlaylistAllView: View {
                 }
             } else {
                 LazyVStack(spacing: 12) {
-                    ForEach(viewModel.playlists, id: \.id) { playlist in
+                    ForEach(viewModel.playlists ?? [], id: \.id) { playlist in
                         Button(action: {
                             sheetManager.presentPlaylistDetail(for: playlist)
                         }) {
@@ -44,17 +43,26 @@ struct PlaylistAllView: View {
             }
         }
         .onAppear {
-            viewModel.loadPlaylists()
+            if viewModel.playlists.isEmpty { // ✅ 초기 값 확인 후 로드
+                viewModel.loadPlaylists()
+            }
         }
         .sheet(isPresented: $sheetManager.showPlaylistDetail, onDismiss: {
-            print("Playlist sheet dismissed. Reloading playlists...")
+            print("플레이리스트 상세 화면 닫힘, 데이터 새로고침")
             viewModel.loadPlaylists()
-        }) {
+
+            // ✅ 로컬 캐시된 이미지 강제 갱신
+            for playlist in viewModel.playlists {
+                if let updatedImage = PlaylistService.shared.loadPlaylistImageLocally(playlist.id) {
+                    NotificationCenter.default.post(name: .playlistUpdated, object: nil, userInfo: ["playlistID": playlist.id, "image": updatedImage])
+                }
+            }
+        }){
             if let playlist = sheetManager.selectedPlaylist {
                 PlaylistDetailedView(
                     playlist: playlist,
                     playlistViewModel: viewModel,
-                    sheetManager: sheetManager
+                    sheetManager: sheetManager  // 여기 추가
                 )
             }
         }

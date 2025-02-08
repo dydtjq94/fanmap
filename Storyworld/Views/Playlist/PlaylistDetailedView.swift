@@ -7,6 +7,7 @@ struct PlaylistDetailedView: View {
     @ObservedObject var sheetManager: SheetManager
     @StateObject private var viewModel = PlaylistDetailedViewModel()
     @State private var currentPlaylist: Playlist
+    @State private var localPlaylistImage: UIImage? = nil
     
     // 기존 State
     @State private var showTitleAlert = false
@@ -35,52 +36,45 @@ struct PlaylistDetailedView: View {
             VStack {
                 HStack {
                     ZStack {
-                        // ✅ 플레이리스트 이미지 영역
                         Button(action: {
-                            // "이미지 바꾸기" 버튼 탭 시 → 사진 라이브러리 권한 체크
                             checkPermission(for: .photoLibrary) { granted in
                                 if granted {
-                                    // 권한 OK → 이미지 피커 표시
                                     isShowingPlaylistImagePicker = true
                                 } else {
-                                    // 권한 거부됨 → 필요하다면 Alert 안내
                                     print("❌ 사진 권한 거부됨")
                                 }
                             }
                         }) {
-                            if let urlString = currentPlaylist.thumbnailURL,
-                               let url = URL(string: urlString) {
-                                // 썸네일 URL 있으면 AsyncImage 표시
+                            if let localImage = localPlaylistImage {
+                                // ✅ 로컬 이미지 먼저 표시
+                                Image(uiImage: localImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 80, height: 80)
+                                    .clipShape(Circle()) // 동그랗게 표시
+                                    .shadow(radius: 5)
+                            } else if let urlString = currentPlaylist.thumbnailURL, let url = URL(string: urlString) {
+                                // ✅ Firebase Storage URL로부터 다운로드
                                 AsyncImage(url: url) { image in
                                     image
                                         .resizable()
-                                        .scaledToFit()
+                                        .scaledToFill()
                                         .frame(width: 80, height: 80)
-                                        .cornerRadius(12)
+                                        .clipShape(Circle())
+                                        .shadow(radius: 5)
                                 } placeholder: {
-                                    Image(currentPlaylist.defaultThumbnailName)
-                                        .resizable()
-                                        .scaledToFit()
+                                    ProgressView()
                                         .frame(width: 80, height: 80)
-                                        .cornerRadius(12)
                                 }
                             } else {
-                                // URL 없으면 기본 이미지
+                                // 기본 썸네일 표시
                                 Image(currentPlaylist.defaultThumbnailName)
                                     .resizable()
-                                    .scaledToFit()
+                                    .scaledToFill()
                                     .frame(width: 80, height: 80)
-                                    .cornerRadius(12)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 5)
                             }
-                        }
-                        
-                        // 업로드 중 로딩 표시
-                        if isUploadingThumbnail {
-                            Color.black.opacity(0.4)
-                                .frame(width: 80, height: 80)
-                                .cornerRadius(12)
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         }
                     }
                     
@@ -209,6 +203,12 @@ struct PlaylistDetailedView: View {
             .onAppear {
                 viewModel.loadVideosInPlaylist(for: currentPlaylist)
             }
+            .onAppear {
+                loadPlaylistImage()
+            }
+            .onChange(of: playlist.id) { _ in
+                loadPlaylistImage()
+            }
             .alert("플레이리스트 이름 변경", isPresented: $showTitleAlert) {
                 TextField("새 이름", text: $updatedTitle)
                 Button("저장") {
@@ -245,21 +245,42 @@ struct PlaylistDetailedView: View {
         }
     }
     
+    // ✅ 새로운 함수 추가
+    private func loadPlaylistImage() {
+        // ✅ 1) 로컬에 저장된 이미지 먼저 적용
+        if let localImage = PlaylistService.shared.loadPlaylistImageLocally(playlist.id) {
+            self.localPlaylistImage = localImage
+            print("✅ 로컬에서 플레이리스트 이미지 로드 완료")
+        } else if let urlString = playlist.thumbnailURL, let url = URL(string: urlString) {
+            // ✅ 2) 로컬에 없으면 Firebase에서 다운로드
+            PlaylistService.shared.downloadImage(from: url, for: playlist.id) { image in
+                if let downloadedImage = image {
+                    self.localPlaylistImage = downloadedImage
+                    print("✅ Firebase에서 이미지 다운로드 후 로컬 저장 완료")
+                }
+            }
+        }
+    }
+    
     // MARK: - 이미지를 고른 뒤 업로드 처리
     private func handlePlaylistImageSelection() {
         guard let selectedImage = selectedPlaylistImage else { return }
-        
-        // 업로드 시작
+
+        // ✅ 1) UI에 즉시 반영
+        self.localPlaylistImage = selectedImage
+
+        // ✅ 2) 로컬 파일에도 즉시 저장
+        PlaylistService.shared.savePlaylistImageLocally(currentPlaylist.id, image: selectedImage)
+
+        // ✅ 3) Firebase Storage에 업로드 (비동기 처리)
         isUploadingThumbnail = true
-        
-        // Firebase Storage 업로드
         PlaylistService.shared.uploadPlaylistThumbnail(playlist: currentPlaylist, image: selectedImage) { url in
             DispatchQueue.main.async {
                 self.isUploadingThumbnail = false
             }
             guard let url = url else { return }
-            
-            // 로컬 State 갱신
+
+            // ✅ Firestore 업데이트 (thumbnailURL 동기화)
             DispatchQueue.main.async {
                 self.currentPlaylist.thumbnailURL = url.absoluteString
             }

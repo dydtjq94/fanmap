@@ -19,15 +19,14 @@ struct UserProfileView: View {
     @State private var editedBio = ""
     
     @State private var isShowingImagePicker = false
-    @State private var isShowingActionSheet = false
     @State private var selectedImage: UIImage?
-    @State private var selectedSourceType: UIImagePickerController.SourceType = .photoLibrary
+    @State private var selectedSourceType: UIImagePickerController.SourceType?
     
     // ✅ 업로드 중인지 표시하는 변수
     @State private var isUploadingProfileImage = false
     
     @State private var profileImage: UIImage? = nil
-
+    
     var body: some View {
         if userService.user != nil {
             HStack(alignment: .center, spacing: 16) {
@@ -37,7 +36,16 @@ struct UserProfileView: View {
                     // 원래 버튼
                     Button(action: {
                         UIImpactFeedbackGenerator.trigger(.light)
-                        isShowingActionSheet = true
+                        checkPermission(for: .photoLibrary) { granted in
+                            if granted {
+                                DispatchQueue.main.async {
+                                    selectedSourceType = .photoLibrary
+                                    isShowingImagePicker = true
+                                }
+                            } else {
+                                print("❌ Photo Library 권한 거부됨")
+                            }
+                        }
                     }) {
                         if let image = profileImage {
                             Image(uiImage: image)
@@ -54,35 +62,6 @@ struct UserProfileView: View {
                                 .clipShape(Circle())
                                 .shadow(radius: 5)
                         }
-                    }
-                    .actionSheet(isPresented: $isShowingActionSheet) {
-                        ActionSheet(
-                            title: Text("프로필 사진 변경"),
-                            message: nil,
-                            buttons: [
-                                .default(Text("사진 선택")) {
-                                    checkPermission(for: .photoLibrary) { granted in
-                                        if granted {
-                                            selectedSourceType = .photoLibrary
-                                            isShowingImagePicker = true
-                                        } else {
-                                            print("❌ Photo Library 권한 거부됨")
-                                        }
-                                    }
-                                },
-                                .default(Text("카메라 촬영")) {
-                                    checkPermission(for: .camera) { granted in
-                                        if granted {
-                                            selectedSourceType = .camera
-                                            isShowingImagePicker = true
-                                        } else {
-                                            print("❌ Camera 권한 거부됨")
-                                        }
-                                    }
-                                },
-                                .cancel()
-                            ]
-                        )
                     }
                     
                     // ✅ 업로드 중이면, Circle 위에 로딩 아이콘 표시
@@ -109,7 +88,7 @@ struct UserProfileView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(.bottom, 2)
-
+                    
                     // 기존 Badge UI
                     HStack(spacing: 8) {
                         HStack(spacing: 2) {
@@ -191,20 +170,26 @@ struct UserProfileView: View {
                     }
                 }
             }
-            // 이미지 피커
-            .sheet(isPresented: $isShowingImagePicker, onDismiss: handleImageSelection) {
-                ImagePickerManager(image: $selectedImage, sourceType: selectedSourceType)
-            }
-            // 프로필 이미지 로드
             .onAppear {
-                userService.loadProfileImage { image in
-                    self.profileImage = image
+                // 1) 로컬 파일 먼저 확인
+                if let localImage = userService.loadProfileImageLocally() {
+                    self.profileImage = localImage
+                    print("✅ 로컬 이미지를 즉시 UI에 반영")
+                } else {
+                    // 2) 로컬에 없으면 서버에서 로드
+                    userService.loadProfileImage { image in
+                        self.profileImage = image
+                    }
                 }
             }
             .onChange(of: userService.user?.profileImageURL) {
+                // 서버 URL이 바뀌면, 혹시 모르니 다시 서버 로드 (or 로컬 저장)?
                 userService.loadProfileImage { image in
                     self.profileImage = image
                 }
+            }
+            .sheet(isPresented: $isShowingImagePicker, onDismiss: handleImageSelection) {
+                ImagePickerManager(image: $selectedImage, sourceType: .photoLibrary)
             }
         } else {
             ProgressView("Loading user data...")
@@ -216,12 +201,15 @@ struct UserProfileView: View {
     private func handleImageSelection() {
         guard let selectedImage = selectedImage else { return }
         
-        // ✅ 업로드 시작
-        isUploadingProfileImage = true
+        // 1) 화면에 즉시 반영
+        self.profileImage = selectedImage
         
-        // Firebase Storage 업로드 → Firestore 업데이트
+        // 2) 로컬에 저장
+        userService.saveProfileImageLocally(selectedImage)
+        
+        // 3) 업로드
+        isUploadingProfileImage = true
         userService.uploadProfileImage(selectedImage) { url in
-            // 업로드 끝
             isUploadingProfileImage = false
             
             if let url = url {

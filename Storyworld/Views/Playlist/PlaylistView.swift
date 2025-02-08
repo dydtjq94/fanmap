@@ -67,7 +67,14 @@ struct PlaylistView: View {
         .sheet(isPresented: $sheetManager.showPlaylistDetail, onDismiss: {
             print("플레이리스트 상세 화면 닫힘, 데이터 새로고침")
             viewModel.loadPlaylists()
-        }) {
+
+            // ✅ 로컬 캐시된 이미지 강제 갱신
+            for playlist in viewModel.playlists {
+                if let updatedImage = PlaylistService.shared.loadPlaylistImageLocally(playlist.id) {
+                    NotificationCenter.default.post(name: .playlistUpdated, object: nil, userInfo: ["playlistID": playlist.id, "image": updatedImage])
+                }
+            }
+        }){
             if let playlist = sheetManager.selectedPlaylist {
                 PlaylistDetailedView(
                     playlist: playlist,

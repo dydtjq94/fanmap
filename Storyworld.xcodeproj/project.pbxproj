@@ -523,7 +523,6 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Storyworld/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "개청자";
-				INFOPLIST_KEY_NSCameraUsageDescription = "프로필 및 재생 목록 이미지 변경을 위해 카메라 권한이 필요해요";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "영상 발견과 수집을 위해 위치 권한이 필요해요";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "영상 발견과 수집을 위해 위치 권한이 필요해요";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "영상 발견과 수집을 위해 위치 권한이 필요해요";
@@ -566,7 +565,6 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Storyworld/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "개청자";
-				INFOPLIST_KEY_NSCameraUsageDescription = "프로필 및 재생 목록 이미지 변경을 위해 카메라 권한이 필요해요";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "영상 발견과 수집을 위해 위치 권한이 필요해요";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "영상 발견과 수집을 위해 위치 권한이 필요해요";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "영상 발견과 수집을 위해 위치 권한이 필요해요";
