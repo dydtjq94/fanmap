@@ -79,7 +79,7 @@ struct UserProfileView: View {
                     // 닉네임 수정 버튼
                     Button(action: {
                         UIImpactFeedbackGenerator.trigger(.light)
-                        editedNickname = userService.user?.nickname ?? "Guest"
+                        editedNickname = ""
                         isEditingNickname = true
                     }) {
                         Text(userService.user?.nickname ?? "Guest")
@@ -136,7 +136,7 @@ struct UserProfileView: View {
                     // 소개글 수정 버튼
                     Button(action: {
                         UIImpactFeedbackGenerator.trigger(.light)
-                        editedBio = userService.user?.bio ?? "소개글을 입력하세요"
+                        editedBio = ""
                         isEditingBio = true
                     }) {
                         Text(userService.user?.bio?.isEmpty == false ? userService.user!.bio! : "소개글을 입력하세요")
@@ -149,7 +149,7 @@ struct UserProfileView: View {
             // 닉네임 수정 Alert
             .alert("닉네임 수정", isPresented: $isEditingNickname) {
                 VStack {
-                    TextField("닉네임을 입력하세요", text: $editedNickname)
+                    TextField("", text: $editedNickname, prompt: Text(userService.user?.nickname ?? "닉네임을 입력하세요"))
                         .onChange(of: editedNickname) {
                             if editedNickname.count > 12 {
                                 editedNickname = String(editedNickname.prefix(12))
@@ -167,9 +167,32 @@ struct UserProfileView: View {
                             }
                             isEditingNickname = false
                         }
+                        .disabled(editedNickname.isEmpty) // 빈 문자열이면 버튼 비활성화
                     }
                 }
             }
+            // 소개글 수정 Alert
+            .alert("소개글 수정", isPresented: $isEditingBio) {
+                VStack {
+                    TextField("", text: $editedBio, prompt: Text(userService.user?.bio ?? "소개글을 입력하세요"))
+                    
+                    HStack {
+                        Button("취소", role: .cancel) {}
+                        Button("저장") {
+                            if var user = userService.user {
+                                user.bio = editedBio
+                                userService.saveUser(user)
+                            }
+                        }
+                        .disabled(editedBio.isEmpty) // 빈 문자열이면 버튼 비활성화
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(Color(UIColor(hex: "#1D1D1D")))
+            .cornerRadius(16)
+            .shadow(radius: 10)
             .onAppear {
                 // 1) 로컬 파일 먼저 확인
                 if let localImage = userService.loadProfileImageLocally() {

@@ -83,7 +83,7 @@ struct PlaylistDetailedView: View {
                         // 타이틀 수정 버튼
                         Button(action: {
                             UIImpactFeedbackGenerator.trigger(.light)
-                            updatedTitle = currentPlaylist.name
+                            updatedTitle = ""
                             showTitleAlert = true
                         }) {
                             Text(currentPlaylist.name)
@@ -96,7 +96,7 @@ struct PlaylistDetailedView: View {
                         // 설명 수정 버튼
                         Button(action: {
                             UIImpactFeedbackGenerator.trigger(.light)
-                            updatedDescription = currentPlaylist.description ?? "설명을 입력하세요"
+                            updatedDescription = ""
                             showDescriptionAlert = true
                         }) {
                             Text(currentPlaylist.description ?? "설명을 입력하세요")
@@ -150,6 +150,7 @@ struct PlaylistDetailedView: View {
                     HStack {
                         Spacer()
                         Button(action: {
+                            UIImpactFeedbackGenerator.trigger(.light)
                             sheetManager.presentAddVideoSheet()
                         }) {
                             Text("영상 추가")
@@ -209,34 +210,50 @@ struct PlaylistDetailedView: View {
             .onChange(of: playlist.id) {
                 loadPlaylistImage()
             }
+            // 플레이리스트 이름 변경 Alert
             .alert("플레이리스트 이름 변경", isPresented: $showTitleAlert) {
-                TextField("새 이름", text: $updatedTitle)
-                Button("저장") {
-                    Task {
-                        await PlaylistService.shared.updatePlaylistDetails(
-                            id: currentPlaylist.id,
-                            newName: updatedTitle,
-                            newDescription: nil
-                        )
+                VStack {
+                    TextField("", text: $updatedTitle, prompt: Text(currentPlaylist.name).foregroundColor(.gray))
+                    
+                    HStack {
+                        Button("취소", role: .cancel) {}
+                        Button("저장") {
+                            Task {
+                                await PlaylistService.shared.updatePlaylistDetails(
+                                    id: currentPlaylist.id,
+                                    newName: updatedTitle.isEmpty ? currentPlaylist.name : updatedTitle,
+                                    newDescription: nil
+                                )
+                            }
+                            currentPlaylist.name = updatedTitle.isEmpty ? currentPlaylist.name : updatedTitle
+                        }
+                        .disabled(updatedTitle.isEmpty) // 빈 문자열이면 버튼 비활성화
                     }
-                    currentPlaylist.name = updatedTitle
                 }
-                Button("취소", role: .cancel) {}
             }
+
+            // 플레이리스트 설명 변경 Alert
             .alert("플레이리스트 설명 변경", isPresented: $showDescriptionAlert) {
-                TextField("새 설명", text: $updatedDescription)
-                Button("저장") {
-                    Task {
-                        await PlaylistService.shared.updatePlaylistDetails(
-                            id: currentPlaylist.id,
-                            newName: nil,
-                            newDescription: updatedDescription
-                        )
+                VStack {
+                    TextField("", text: $updatedDescription, prompt: Text(currentPlaylist.description ?? "설명을 입력하세요").foregroundColor(.gray))
+                    
+                    HStack {
+                        Button("취소", role: .cancel) {}
+                        Button("저장") {
+                            Task {
+                                await PlaylistService.shared.updatePlaylistDetails(
+                                    id: currentPlaylist.id,
+                                    newName: nil,
+                                    newDescription: updatedDescription.isEmpty ? currentPlaylist.description : updatedDescription
+                                )
+                            }
+                            currentPlaylist.description = updatedDescription.isEmpty ? currentPlaylist.description : updatedDescription
+                        }
+                        .disabled(updatedDescription.isEmpty) // 빈 문자열이면 버튼 비활성화
                     }
-                    currentPlaylist.description = updatedDescription
                 }
-                Button("취소", role: .cancel) {}
             }
+
             .sheet(isPresented: $sheetManager.showAddVideoSheet, onDismiss: {
                 viewModel.loadVideosInPlaylist(for: currentPlaylist)
             }) {
