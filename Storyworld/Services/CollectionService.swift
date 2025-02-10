@@ -27,30 +27,6 @@ class CollectionService {
     init() {
         userService.initializeUserIfNeeded()
     }
-//    
-//    func fetchUncollectedVideos(for genre: VideoGenre, rarity: VideoRarity, completion: @escaping (Result<[Video], Error>) -> Void) {
-//        guard UserService.shared.user != nil else {
-//            completion(.failure(NSError(domain: "User not found", code: 401, userInfo: nil)))
-//            return
-//        }
-//        
-//        // ✅ UserDefaults에서 수집된 영상 로드
-//        let collectedVideoIds = UserDefaults.standard.loadCollectedVideos().map { $0.video.videoId }
-//        
-//        let filteredVideos = VideoDummyData.sampleVideos.filter { video in
-//            video.genre == genre &&
-//            video.rarity == rarity &&
-//            !collectedVideoIds.contains(video.videoId)
-//        }
-//        
-//        DispatchQueue.main.async {
-//            if filteredVideos.isEmpty {
-//                completion(.failure(NSError(domain: "No videos found", code: 404, userInfo: nil)))
-//            } else {
-//                completion(.success(filteredVideos))
-//            }
-//        }
-//    }
     
     func fetchRandomVideoByGenre(genre: VideoGenre, rarity: VideoRarity, completion: @escaping (Result<Video, Error>) -> Void) {
         let functionURL = "https://getrandomvideobygenre-bgfikxjrua-uc.a.run.app"
@@ -59,19 +35,19 @@ class CollectionService {
             print("Invalid URL")
             return
         }
-
+        
         let task = URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 completion(.failure(error))
                 return
             }
-
+            
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 let statusError = NSError(domain: "HTTPError", code: (response as? HTTPURLResponse)?.statusCode ?? 500, userInfo: nil)
                 completion(.failure(statusError))
                 return
             }
-
+            
             guard let data = data else {
                 let noDataError = NSError(domain: "DataError", code: -1, userInfo: nil)
                 completion(.failure(noDataError))
@@ -95,7 +71,7 @@ class CollectionService {
                 completion(.failure(error))
             }
         }
-
+        
         task.resume()
     }
     
@@ -186,6 +162,16 @@ class CollectionService {
             
             // ✅ 3. 보상 지급
             self.userService.rewardUser(for: video)
+            
+            // 4. (중요) -> TradeService를 통해 마켓에 등록
+            Task {
+                do {
+                    try await TradeService.shared.createMarketListing(from: newCollectedVideo)
+                    print("✅ 마켓 등록")
+                } catch {
+                    print("❌ 마켓 등록 오류: \(error.localizedDescription)")
+                }
+            }
             
             print("✅ 영상이 수집되었습니다: \(video.title)")
         } else {

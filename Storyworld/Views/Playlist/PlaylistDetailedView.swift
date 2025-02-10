@@ -144,7 +144,6 @@ struct PlaylistDetailedView: View {
                 Spacer()
             }
             .background(Color(UIColor(hex:"#1D1D1D")))
-            // 플레이리스트 삭제 버튼 등 기존 로직 유지
             .overlay(
                 VStack {
                     Spacer()
@@ -237,6 +236,14 @@ struct PlaylistDetailedView: View {
                     currentPlaylist.description = updatedDescription
                 }
                 Button("취소", role: .cancel) {}
+            }
+            .sheet(isPresented: $sheetManager.showAddVideoSheet, onDismiss: {
+                viewModel.loadVideosInPlaylist(for: currentPlaylist)
+            }) {
+                PlaylistAddVideoView(
+                    playlist: $currentPlaylist,
+                    playlistViewModel: playlistViewModel
+                )
             }
             
             // ✅ 사진 라이브러리 피커 Sheet
