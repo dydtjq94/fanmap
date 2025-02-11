@@ -73,10 +73,10 @@ struct MapTabUserProfileView: View {
                     }
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(Color(UIColor(hex:"#1B1B1B")))
-            .cornerRadius(8)
+            .cornerRadius(12)
             .padding(.top, 4)
             .padding(.trailing, 12)
         }

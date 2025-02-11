@@ -19,31 +19,44 @@ struct TradeView: View {
     @StateObject private var viewModel = TradeViewModel()
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                let grouped = Dictionary(grouping: viewModel.trades, by: { $0.ownerId })
-                
-                // 각 ownerId별로 섹션 구성
-                ForEach(grouped.keys.sorted(), id: \.self) { ownerId in
-                    VStack(alignment: .leading, spacing: 8) {
-                        ownerHeaderView(ownerId: ownerId) // 🔥 유저 정보 헤더
-                        
-                        // 🔥 각 사용자의 TradeItemView 렌더링
-                        VStack(alignment: .leading, spacing: 16) {
-                            ForEach(grouped[ownerId] ?? []) { trade in
-                                TradeItemView(trade: trade)
-                            }
+        
+        VStack(alignment: .leading, spacing: 16) {
+            let grouped = Dictionary(grouping: viewModel.trades, by: { $0.ownerId })
+            
+            // 각 ownerId별로 섹션 구성
+            ForEach(grouped.keys.sorted(), id: \.self) { ownerId in
+                VStack(alignment: .leading, spacing: 8) {
+                    ownerHeaderView(ownerId: ownerId) // 🔥 유저 정보 헤더
+                        .padding(.bottom, 8)
+                    
+                    // 🔥 각 사용자의 TradeItemView 렌더링
+                    VStack(alignment: .leading, spacing: 16) {
+                        ForEach(grouped[ownerId] ?? []) { trade in
+                            TradeItemView(trade: trade)
                         }
                     }
-                    .padding(.bottom, 20) // 섹션 간격
+                    .padding(.bottom, 16)
+                    
+                    let user = viewModel.userMap[ownerId]
+                    if let memo = user?.tradeMemo, !memo.isEmpty {
+                        Text("메모: \(memo)")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.gray)
+                            .lineSpacing(4)
+                    }
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .background(Color(UIColor(hex: "#1D1D1D")))
+                .cornerRadius(16)
+                .padding(.bottom, 20) // 섹션 간격
             }
         }
+        .frame(maxWidth: .infinity)
+
         .onAppear {
             viewModel.loadTrades()
         }
-        .frame(maxWidth: .infinity)
-        .background(Color(UIColor(hex:"#121212")))
     }
     
     @ViewBuilder
@@ -57,41 +70,35 @@ struct TradeView: View {
                         switch phase {
                         case .empty:
                             ProgressView()
-                                .frame(width: 32, height: 32)
+                                .frame(width: 24, height: 24)
                         case .success(let image):
                             image
                                 .resizable()
                                 .scaledToFill()
-                                .frame(width: 32, height: 32)
+                                .frame(width: 24, height: 24)
                                 .clipShape(Circle())
                         case .failure(_):
                             Image(systemName: "person.crop.circle.badge.exclamationmark")
                                 .resizable()
-                                .frame(width: 32, height: 32)
+                                .frame(width: 24, height: 24)
                                 .foregroundColor(.gray)
                         @unknown default:
                             EmptyView()
-                                .frame(width: 32, height: 32)
+                                .frame(width: 24, height: 24)
                         }
                     }
                 } else {
                     Image(systemName: "person.crop.circle.fill")
                         .resizable()
-                        .frame(width: 32, height: 32)
+                        .frame(width: 24, height: 24)
                         .foregroundColor(.gray)
                 }
                 
                 // 닉네임 + memo
                 VStack(alignment: .leading, spacing: 2) {
                     Text(user.nickname)
-                        .font(.headline)
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
-                    
-                    if let memo = user.tradeMemo, !memo.isEmpty {
-                        Text(memo)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
                 }
             }
         } else {

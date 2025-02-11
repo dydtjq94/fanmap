@@ -159,15 +159,6 @@ class CollectionService {
             print("❌ Firestore 저장 오류: \(error.localizedDescription)")
         }
         
-        // 3. 트레이드 등록
-        TradeService.shared.createTrade(for: newCollectedVideo) { success in
-            if success {
-                print("✅ 트레이드 등록 완료! \(video.title)")
-            } else {
-                print("❌ 트레이드 등록 실패...")
-            }
-        }
-        
         // ✅ 3. 보상 지급
         self.userService.rewardUser(for: video)
         
@@ -206,15 +197,6 @@ class CollectionService {
                 print("🔥 Firestore에 영상 저장 완료: \(video.title)")
             } catch {
                 print("❌ Firestore 저장 오류: \(error.localizedDescription)")
-            }
-        }
-        
-        // 3. 트레이드 등록
-        TradeService.shared.createTrade(for: newCollectedVideo) { success in
-            if success {
-                print("✅ 트레이드 등록 완료! \(video.title)")
-            } else {
-                print("❌ 트레이드 등록 실패...")
             }
         }
         
@@ -295,22 +277,10 @@ class CollectionService {
                 return
             }
             
-            // 2) Trade 문서도 삭제 (등록되어 있다면)
-            TradeService.shared.deleteTradeIfExists(
-                ownerId: self.userService.user?.id ?? "",
-                videoId: video.videoId
-            ) { tradeDeleted in
-                if !tradeDeleted {
-                    print("❌ Trade 삭제 오류 발생")
-                    completion(false)
-                    return
-                }
-                
-                // 3) 코인 지급
-                self.userService.addCoins(amount: coinAmount)
-                print("✅ \(coinAmount) 코인 지급 완료!")
-                completion(true)
-            }
+            // 3) 코인 지급
+            self.userService.addCoins(amount: coinAmount)
+            print("✅ \(coinAmount) 코인 지급 완료!")
+            completion(true)
         }
     }
 }

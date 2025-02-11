@@ -48,6 +48,7 @@ struct PlaylistAddVideoView: View {
                     }
                 }
             }
+            .background(Color(UIColor(hex:"#1D1D1D")))
             .navigationTitle("영상 추가")
             .onAppear {
                 viewModel.loadVideosNotInPlaylist(for: playlist)

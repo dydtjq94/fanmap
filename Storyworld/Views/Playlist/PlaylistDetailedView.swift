@@ -202,7 +202,7 @@ struct PlaylistDetailedView: View {
                 }
             }
             .onAppear {
-                viewModel.loadVideosInPlaylist(for: currentPlaylist)
+                viewModel.loadVideosInPlaylist(for: playlist)
             }
             .onAppear {
                 loadPlaylistImage()

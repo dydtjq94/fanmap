@@ -5,6 +5,24 @@ class TradeService {
     static let shared = TradeService()
     private init() {}
     
+    /// 특정 영상(videoId)에 해당하는 Trade 문서가 있는지 검사
+    func checkIfTradeExists(ownerId: String, videoId: String, completion: @escaping (Bool) -> Void) {
+        let db = Firestore.firestore()
+        let tradeDocRef = db
+            .collection("users").document(ownerId)
+            .collection("myTrades").document(videoId)
+        
+        tradeDocRef.getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Trade 문서 조회 오류: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+            // 문서가 존재하면 true
+            completion(snapshot?.exists == true)
+        }
+    }
+    
     /// 새 트레이드 생성 (유저 하위 `myTrades` 서브컬렉션)
     func createTrade(for collectedVideo: CollectedVideo, completion: @escaping (Bool) -> Void) {
         let db = Firestore.firestore()

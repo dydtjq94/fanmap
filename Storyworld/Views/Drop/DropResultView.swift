@@ -50,11 +50,11 @@ struct DropResultView: View {
                             .font(.system(size: 14))
                             .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
                     }
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 16)
                     .padding(.horizontal, 16)
-                    .background(Color(AppColors.mainBgColor))
+                    .background(Color(AppColors.btnSubBgColor))
                 }
-                .cornerRadius(10)
+                .cornerRadius(20)
                 .padding(.top, 8)
                 .onAppear {
                     coinSellValue = UserStatusManager.shared.getCoinSell(for: video.rarity)  // ✅ 한 번만 가져오도록 변경
@@ -131,23 +131,78 @@ struct DropResultView: View {
                 
                 Spacer()
                 
-                // ✅ "수집하기" 버튼
-                Button(action: {
-                    closeAction()
-                    UIImpactFeedbackGenerator.trigger(.heavy)
-                }) {
-                    Text("수집하기")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: UIScreen.main.bounds.width * 0.6)
-                        .padding()
-                        .background(Color(AppColors.mainColor))
-                        .cornerRadius(10)
+            
+                HStack(spacing: 16){
+                    Button(action: {
+                        UIImpactFeedbackGenerator.trigger(.heavy)
+                    }) {
+                        ZStack{
+                            Circle()
+                                .frame(width: 36, height: 36)
+                                .foregroundColor(.gray)
+                            Image(systemName: "square.and.arrow.up.circle.fill")
+                                .font(.system(size: 40, weight: .bold))
+                                .foregroundColor(Color(AppColors.btnSubBgColor))
+                        }
+                    }
+                    
+                    // 2) 수집하기 버튼 (기존)
+                    Button(action: {
+                        UIImpactFeedbackGenerator.trigger(.heavy)
+                        closeAction()
+                    }) {
+                        Text("수집하기")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.black)
+                            .frame(width: 200)
+                            .padding()
+                            .background(Color(AppColors.mainColor))
+                            .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        UIImpactFeedbackGenerator.trigger(.heavy)
+                        createTrade()
+                    }) {
+                        
+                        ZStack{
+                            Circle()
+                                .frame(width: 36, height: 36)
+                                .foregroundColor(.gray)
+                            Image(systemName: "play.rectangle.on.rectangle.circle.fill")
+                                .font(.system(size: 40, weight: .bold))
+                                .foregroundColor(Color(AppColors.btnSubBgColor))
+                        }
+                    }
                 }
                 .padding(.bottom, 16)
             }
         }
     }
+    
+    // MARK: - 거래 등록 함수
+    func createTrade() {
+        guard let ownerId = UserService.shared.user?.id else { return }
+        let collectedVideo = CollectedVideo(
+            id: video.videoId,
+            video: video,
+            collectedDate: Date(),
+            tradeStatus: .available,
+            isFavorite: false,
+            ownerId: ownerId
+        )
+        
+        TradeService.shared.createTrade(for: collectedVideo) { success in
+            if success {
+                print("✅ 거래 등록 완료!")
+                // 등록 성공 시 화면 닫기
+                closeAction()
+            } else {
+                print("❌ 거래 등록 실패...")
+            }
+        }
+    }
+
     
     func playHapticPattern(for rarity: VideoRarity) {
         let generator = UIImpactFeedbackGenerator(style: .light)

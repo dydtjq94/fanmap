@@ -20,11 +20,12 @@ struct ChannelBadgeView: View {
             
             Text(channel.localized()) // 🔥 채널명 표시
                 .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.white)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .frame(height: 24)  // RarityBadgeView와 높이 통일
-        .background(Color.gray.opacity(0.2)) // 🔥 배경 추가 (원하면 변경 가능)
+        .background(Color.gray) // 🔥 배경 추가 (원하면 변경 가능)
         .cornerRadius(6)
     }
 }

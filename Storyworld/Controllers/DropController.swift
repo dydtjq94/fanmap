@@ -95,7 +95,7 @@ final class DropController: UIViewController {
         
         // 장르 SF Symbol 설정
         genreImageView.image = UIImage(named: circleData.channel.imageName)
-        genreImageView.tintColor = circleData.rarity.backgroundColor
+        genreImageView.tintColor = .gray
         genreImageView.contentMode = .scaleAspectFit
         genreImageView.translatesAutoresizingMaskIntoConstraints = false
         

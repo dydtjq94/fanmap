@@ -311,7 +311,8 @@ class UserService: ObservableObject {
                 "experience": user.experience,
                 "balance": user.balance,
                 "gems": user.gems,
-                "tradeUpdated": user.tradeUpdated ?? Date()
+                "tradeUpdated": user.tradeUpdated ?? Date(),
+                "tradeMemo": user.tradeMemo ?? ""
             ]
             
             do {
