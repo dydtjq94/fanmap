@@ -68,6 +68,8 @@ final class CameraManager {
     func configureGestureOptions() {
         // 지도 기울이기 비활성화
         mapView.gestures.options.pitchEnabled = false // 기울이기 비활성화
+        mapView.ornaments.options.compass.visibility = .hidden
+        mapView.ornaments.options.scaleBar.visibility = .hidden
         print("✅ 지도 기울이기가 비활성화되었습니다.")
     }
 }

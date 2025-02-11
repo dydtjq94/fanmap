@@ -86,7 +86,9 @@ class LoginService: ObservableObject {
                 bio: "소개글을 작성하세요",
                 experience: 0,
                 balance: 1000,
-                gems: 0
+                gems: 0,
+                tradeUpdated: nil,
+                tradeMemo: ""
             )
             await saveUserToFirestore(uid: uid, userData: newUser)
             userService.saveUser(newUser)
@@ -112,6 +114,13 @@ class LoginService: ObservableObject {
             let userSnapshot = try await userRef.getDocument()
             guard let userData = userSnapshot.data() else { return nil }
             
+            // Firestore의 Timestamp -> Date
+            let tradeUpdatedTimestamp = userData["tradeUpdated"] as? Timestamp
+            let tradeUpdatedDate = tradeUpdatedTimestamp?.dateValue()
+            
+            // 🔥 tradeMemo 파싱
+            let tradeMemoStr = userData["tradeMemo"] as? String // 없는 경우 nil
+            
             let user = User(
                 id: uid,
                 email: userData["email"] as? String ?? "",
@@ -120,7 +129,9 @@ class LoginService: ObservableObject {
                 bio: userData["bio"] as? String ?? "",
                 experience: userData["experience"] as? Int ?? 0,
                 balance: userData["balance"] as? Int ?? 0,
-                gems: userData["gems"] as? Int ?? 0
+                gems: userData["gems"] as? Int ?? 0,
+                tradeUpdated: tradeUpdatedDate,
+                tradeMemo: tradeMemoStr
             )
             
             // ✅ Firestore에서 collectedVideos & playlists 가져와서 UserDefaults에 저장

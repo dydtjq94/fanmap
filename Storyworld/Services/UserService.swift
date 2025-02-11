@@ -9,17 +9,71 @@ import Foundation
 import FirebaseAuth
 import FirebaseStorage
 import FirebaseFirestore
+import SwiftUI  // UIImage, ObservableObject 위해 SwiftUI 임포트
 
 class UserService: ObservableObject {
     static let shared = UserService()
     @Published var user: User?
+    
+    // ✅ 다른 유저들 캐시: [userId: (User, fetchedAt)]
+    private var cachedUsers: [String: (user: User, fetchedAt: Date)] = [:]
+    private let timeToLive: TimeInterval = 24 * 60 * 60 // 24시간
+    
+    // MARK: - 다른 유저 정보 가져오기 (24h TTL)
+    /// TradeTab 등에서 'ownerId'가 필요할 때 호출
+    func fetchUserById(_ userId: String, completion: @escaping (User?) -> Void) {
+        // 1) 캐시에 있으면 & 유효기간 이내라면 반환
+        if let cached = cachedUsers[userId] {
+            let elapsed = Date().timeIntervalSince(cached.fetchedAt)
+            if elapsed < timeToLive {
+                completion(cached.user)
+                return
+            } else {
+                // 만료
+                cachedUsers.removeValue(forKey: userId)
+            }
+        }
+        
+        // 2) Firestore에서 문서 가져오기
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(userId)
+        
+        userRef.getDocument { snapshot, error in
+            if let error = error {
+                print("❌ fetchUserById 에러: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            guard let snapshot = snapshot, snapshot.exists else {
+                print("⚠️ 해당 user 문서 없음 (userId=\(userId))")
+                completion(nil)
+                return
+            }
+            
+            do {
+                let fetchedUser = try snapshot.data(as: User.self)
+                // 3) 캐시에 저장 (fetchedAt = now)
+                self.cachedUsers[userId] = (fetchedUser, Date())
+                completion(fetchedUser)
+            } catch {
+                print("❌ 디코딩 오류: \(error)")
+                completion(nil)
+            }
+        }
+    }
+    
+    // 만약 앱 재시작 시 캐시를 날리려면
+    func clearOtherUsersCache() {
+        cachedUsers.removeAll()
+    }
     
     private let userDefaultsKey = "currentUser"
     
     // MARK: - 앱 시작 시 UserDefaults → (필요 시) Firestore 동기화
     func initializeUserIfNeeded() {
         DispatchQueue.main.async {
-            if let savedUser = self.loadUser() {
+            if let savedUser = self.loadUserFromLocal() {
                 print("✅ 기존 유저 로드: \(savedUser.nickname)")
                 self.user = savedUser
                 
@@ -46,6 +100,12 @@ class UserService: ObservableObject {
                 return
             }
             
+            // Firestore의 Timestamp를 Date로 변환
+            let tradeUpdatedTimestamp = data["tradeUpdated"] as? Timestamp
+            let tradeUpdatedDate = tradeUpdatedTimestamp?.dateValue()
+            
+            let tradeMemoStr = data["tradeMemo"] as? String // 없는 경우 nil
+            
             // Dictionary → User
             let fetchedUser = User(
                 id: data["id"] as? String ?? "",
@@ -55,41 +115,18 @@ class UserService: ObservableObject {
                 bio: data["bio"] as? String,
                 experience: data["experience"] as? Int ?? 0,
                 balance: data["balance"] as? Int ?? 0,
-                gems: data["gems"] as? Int ?? 0
+                gems: data["gems"] as? Int ?? 0,
+                tradeUpdated: tradeUpdatedDate,
+                tradeMemo: tradeMemoStr
             )
             
             print("✅ Firestore에서 유저 정보 가져옴: \(fetchedUser.nickname)")
             
             // 가져온 정보 로컬에 반영
-            self.saveUser(fetchedUser)
+            self.saveUserToLocal(fetchedUser)
             
         } catch {
             print("❌ Firestore에서 유저 정보 가져오기 실패: \(error.localizedDescription)")
-        }
-    }
-    
-    // MARK: - Firestore에 유저 정보 저장(Dictionary 방식)
-    func syncUserToFirestore(_ user: User) async {
-        let db = Firestore.firestore()
-        let userRef = db.collection("users").document(user.id)
-        
-        // User → Dictionary
-        let userData: [String: Any] = [
-            "id": user.id,
-            "email": user.email,
-            "nickname": user.nickname,
-            "profileImageURL": user.profileImageURL ?? "",
-            "bio": user.bio ?? "",
-            "experience": user.experience,
-            "balance": user.balance,
-            "gems": user.gems
-        ]
-        
-        do {
-            try await userRef.setData(userData)
-            print("🔥 Firestore에 유저 정보 저장 성공: \(user.nickname)")
-        } catch {
-            print("❌ Firestore에 유저 정보 저장 실패: \(error.localizedDescription)")
         }
     }
     
@@ -138,7 +175,7 @@ class UserService: ObservableObject {
                 DispatchQueue.main.async {
                     user.profileImageURL = imageURL.absoluteString
                     self.user = user
-                    self.saveUser(user) // -> UserDefaults에 전체 User 저장
+                    self.saveUserToLocal(user) // -> UserDefaults에 전체 User 저장
                     
                     // ✅ (원한다면) 로컬 파일에 저장된 이미지와 URL을 동기화하는 로직을 넣어도 됨
                 }
@@ -231,37 +268,71 @@ class UserService: ObservableObject {
         }
     }
     
+    // MARK: - UserDefaults 저장/로드 - (로컬 전용)
+        func loadUserFromLocal() -> User? {
+            if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
+                do {
+                    let decodedUser = try JSONDecoder().decode(User.self, from: data)
+                    return decodedUser
+                } catch {
+                    print("Error decoding user: \(error)")
+                    return nil
+                }
+            }
+            return nil
+        }
     
-    // MARK: - UserDefaults에서 로드
-    private func loadUser() -> User? {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
+    func saveUserToLocal(_ user: User) {
+           do {
+               let encoded = try JSONEncoder().encode(user)
+               UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
+               // 메모리 상태도 업데이트
+               DispatchQueue.main.async {
+                   self.user = user
+               }
+               print("✅ User saved to UserDefaults.")
+           } catch {
+               print("Error encoding user: \(error)")
+           }
+       }
+    
+    // MARK: - Firestore 저장(Dictionary 방식) - (서버 전용)
+        func saveUserToFirestore(_ user: User) async {
+            let db = Firestore.firestore()
+            let userRef = db.collection("users").document(user.id)
+            
+            // User → Dictionary
+            let userData: [String: Any] = [
+                "id": user.id,
+                "email": user.email,
+                "nickname": user.nickname,
+                "profileImageURL": user.profileImageURL ?? "",
+                "bio": user.bio ?? "",
+                "experience": user.experience,
+                "balance": user.balance,
+                "gems": user.gems,
+                "tradeUpdated": user.tradeUpdated ?? Date()
+            ]
+            
             do {
-                let decodedUser = try JSONDecoder().decode(User.self, from: data)
-                return decodedUser
+                try await userRef.setData(userData)
+                print("🔥 Firestore에 유저 정보 저장 성공: \(user.nickname)")
             } catch {
-                print("Error decoding user: \(error)")
-                return nil
+                print("❌ Firestore에 유저 정보 저장 실패: \(error.localizedDescription)")
             }
         }
-        return nil
-    }
     
-    // MARK: - UserDefaults + Firestore 동기화
-    func saveUser(_ user: User) {
-        do {
-            let encoded = try JSONEncoder().encode(user)
-            UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
-            DispatchQueue.main.async {
-                self.user = user
-            }
-            print("✅ User saved to UserDefaults.")
-            
-            // Firestore에도 즉시 갱신
+    // MARK: - 로컬 + Firestore 동시 업데이트도 가능하게(옵션)
+    /// 필요에 따라 Firestore까지 동기화하도록 flag 사용
+    func saveUser(_ user: User, alsoSyncToFirestore: Bool = true) {
+        // 1) 로컬 저장
+        self.saveUserToLocal(user)
+        
+        // 2) Firestore 동기화 여부에 따라 저장
+        if alsoSyncToFirestore {
             Task {
-                await syncUserToFirestore(user)
+                await self.saveUserToFirestore(user)
             }
-        } catch {
-            print("Error encoding user: \(error)")
         }
     }
     
@@ -275,6 +346,9 @@ class UserService: ObservableObject {
         user.experience += experienceReward
         user.balance += coinReward
         
+        // 📌 tradeUpdated = 현재 기기 시간을 기록 (Date())
+        user.tradeUpdated = Date()
+        
         let newLevel = UserStatusManager.shared.calculateLevel(from: user.experience)
         print("🎉 경험치: +\(experienceReward), 코인: +\(coinReward), 새 레벨: \(newLevel)")
         
@@ -287,6 +361,9 @@ class UserService: ObservableObject {
         let experienceReward = UserStatusManager.shared.getExperienceReward(for: video.rarity)
         user.experience += experienceReward
         user.balance -= amount
+        
+        // 📌 tradeUpdated = 현재 기기 시간을 기록 (Date())
+        user.tradeUpdated = Date()
         
         if user.balance < 0 { user.balance = 0 }
         

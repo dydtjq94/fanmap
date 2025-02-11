@@ -16,4 +16,6 @@ struct User: Codable, Equatable {
     var experience: Int
     var balance: Int
     var gems: Int
+    var tradeUpdated: Date?
+    var tradeMemo: String?
 }

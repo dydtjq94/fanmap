@@ -134,49 +134,44 @@ class CollectionService {
     func saveCollectedVideo(_ video: Video) async {
         var collectedVideos = UserDefaults.standard.loadCollectedVideos()
         
-        if !collectedVideos.contains(where: { $0.video.videoId == video.videoId }) {
-            let newCollectedVideo = CollectedVideo(
-                id: video.videoId,
-                video: video,
-                collectedDate: Date(),
-                tradeStatus: .available,
-                isFavorite: false,
-                ownerId: Auth.auth().currentUser?.uid ?? "unknown"
-            )
-            
-            // ✅ 1. UserDefaults 업데이트
-            collectedVideos.append(newCollectedVideo)
-            UserDefaults.standard.saveCollectedVideos(collectedVideos)
-            
-            // ✅ 2. Firestore에 저장 (서브컬렉션)
-            let db = Firestore.firestore()
-            let userRef = db.collection("users").document(newCollectedVideo.ownerId)
-            let collectedVideosRef = userRef.collection("collectedVideos").document(video.videoId)
-            
-            do {
-                try collectedVideosRef.setData(from: newCollectedVideo)
-                print("🔥 Firestore에 영상 저장 완료: \(video.title)")
-            } catch {
-                print("❌ Firestore 저장 오류: \(error.localizedDescription)")
-            }
-            
-            // ✅ 3. 보상 지급
-            self.userService.rewardUser(for: video)
-            
-            // 4. (중요) -> TradeService를 통해 마켓에 등록
-            Task {
-                do {
-                    try await TradeService.shared.createMarketListing(from: newCollectedVideo)
-                    print("✅ 마켓 등록")
-                } catch {
-                    print("❌ 마켓 등록 오류: \(error.localizedDescription)")
-                }
-            }
-            
-            print("✅ 영상이 수집되었습니다: \(video.title)")
-        } else {
-            print("⚠️ 이미 존재하는 영상: \(video.videoId)")
+        let newCollectedVideo = CollectedVideo(
+            id: video.videoId,
+            video: video,
+            collectedDate: Date(),
+            tradeStatus: .available,
+            isFavorite: false,
+            ownerId: Auth.auth().currentUser?.uid ?? "unknown"
+        )
+        
+        // ✅ 1. UserDefaults 업데이트
+        collectedVideos.append(newCollectedVideo)
+        UserDefaults.standard.saveCollectedVideos(collectedVideos)
+        
+        // ✅ 2. Firestore에 저장 (서브컬렉션)
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(newCollectedVideo.ownerId)
+        let collectedVideosRef = userRef.collection("collectedVideos").document(video.videoId)
+        
+        do {
+            try collectedVideosRef.setData(from: newCollectedVideo)
+            print("🔥 Firestore에 영상 저장 완료: \(video.title)")
+        } catch {
+            print("❌ Firestore 저장 오류: \(error.localizedDescription)")
         }
+        
+        // 3. 트레이드 등록
+        TradeService.shared.createTrade(for: newCollectedVideo) { success in
+            if success {
+                print("✅ 트레이드 등록 완료! \(video.title)")
+            } else {
+                print("❌ 트레이드 등록 실패...")
+            }
+        }
+        
+        // ✅ 3. 보상 지급
+        self.userService.rewardUser(for: video)
+        
+        print("✅ 영상이 수집되었습니다: \(video.title)")
     }
     
     func saveCollectedVideoWithoutReward(_ video: Video, amount: Int) {
@@ -187,41 +182,46 @@ class CollectionService {
         // ✅ UserDefaults에서 수집된 영상 로드
         var collectedVideos = UserDefaults.standard.loadCollectedVideos()
         
-        if !collectedVideos.contains(where: { $0.video.videoId == video.videoId }) {
-            let newCollectedVideo = CollectedVideo(
-                id: video.videoId, // ✅ Firestore 문서 ID와 일치
-                video: video,
-                collectedDate: Date(),
-                tradeStatus: .available, // ✅ 거래 가능 상태 기본값 설정
-                isFavorite: false,
-                ownerId: currentUser.id // ✅ 유저 ID 사용
-            )
-            
-            // ✅ 1. UserDefaults 업데이트
-            collectedVideos.append(newCollectedVideo)
-            UserDefaults.standard.saveCollectedVideos(collectedVideos)
-            
-            // ✅ 2. Firestore에 저장 (서브컬렉션)
-            let db = Firestore.firestore()
-            let userRef = db.collection("users").document(currentUser.id)
-            let collectedVideosRef = userRef.collection("collectedVideos").document(video.videoId)
-            
-            Task {
-                do {
-                    try collectedVideosRef.setData(from: newCollectedVideo) // 🔥 Firestore에 저장
-                    print("🔥 Firestore에 영상 저장 완료: \(video.title)")
-                } catch {
-                    print("❌ Firestore 저장 오류: \(error.localizedDescription)")
-                }
+        let newCollectedVideo = CollectedVideo(
+            id: video.videoId, // ✅ Firestore 문서 ID와 일치
+            video: video,
+            collectedDate: Date(),
+            tradeStatus: .available, // ✅ 거래 가능 상태 기본값 설정
+            isFavorite: false,
+            ownerId: currentUser.id // ✅ 유저 ID 사용
+        )
+        
+        // ✅ 1. UserDefaults 업데이트
+        collectedVideos.append(newCollectedVideo)
+        UserDefaults.standard.saveCollectedVideos(collectedVideos)
+        
+        // ✅ 2. Firestore에 저장 (서브컬렉션)
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(currentUser.id)
+        let collectedVideosRef = userRef.collection("collectedVideos").document(video.videoId)
+        
+        Task {
+            do {
+                try collectedVideosRef.setData(from: newCollectedVideo) // 🔥 Firestore에 저장
+                print("🔥 Firestore에 영상 저장 완료: \(video.title)")
+            } catch {
+                print("❌ Firestore 저장 오류: \(error.localizedDescription)")
             }
-            
-            // ✅ 3. 경험치 지급 (코인 보상 제외)
-            self.userService.rewardUserWithoutCoins(for: video, amount: amount)
-            
-            print("✅ 영상이 수집되었습니다 (코인 보상 없음): \(video.title)")
-        } else {
-            print("⚠️ 이미 존재하는 영상: \(video.videoId)")
         }
+        
+        // 3. 트레이드 등록
+        TradeService.shared.createTrade(for: newCollectedVideo) { success in
+            if success {
+                print("✅ 트레이드 등록 완료! \(video.title)")
+            } else {
+                print("❌ 트레이드 등록 실패...")
+            }
+        }
+        
+        // ✅ 3. 경험치 지급 (코인 보상 제외)
+        self.userService.rewardUserWithoutCoins(for: video, amount: amount)
+        
+        print("✅ 영상이 수집되었습니다 (코인 보상 없음): \(video.title)")
     }
     
     
@@ -246,39 +246,71 @@ class CollectionService {
         }
     }
     
-    func sellCollectedVideo(_ video: Video, coinAmount: Int, completion: @escaping (Bool) -> Void) {
+    func deleteCollectedVideo(_ video: Video, completion: @escaping (Bool) -> Void) {
         guard let currentUser = userService.user else {
             print("❌ 유저 정보 없음")
             completion(false)
             return
         }
         
-        // ✅ 1. UserDefaults에서 영상 삭제
+        // 1) UserDefaults에서 제거
         var collectedVideos = UserDefaults.standard.loadCollectedVideos()
+        let beforeCount = collectedVideos.count
         collectedVideos.removeAll { $0.video.videoId == video.videoId }
         UserDefaults.standard.saveCollectedVideos(collectedVideos)
+        let afterCount = collectedVideos.count
         
-        // ✅ 2. Firestore에서 영상 삭제
+        if beforeCount == afterCount {
+            print("⚠️ 삭제 대상이 없습니다 (UserDefaults에 해당 영상이 없음).")
+        } else {
+            print("✅ UserDefaults에서 영상(\(video.title)) 제거 완료")
+        }
+        
+        // 2) Firestore에서 제거
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(currentUser.id)
         let collectedVideosRef = userRef.collection("collectedVideos").document(video.videoId)
         
         Task {
             do {
+                // 문서가 있을 경우 삭제, 없으면 에러 없이 그냥 진행
                 try await collectedVideosRef.delete()
-                print("🔥 Firestore에서 영상 삭제 완료: \(video.title)")
+                print("✅ Firestore collectedVideos 문서 삭제 완료 (\(video.title))")
+                
+                // 성공 처리
+                completion(true)
             } catch {
                 print("❌ Firestore 영상 삭제 오류: \(error.localizedDescription)")
+                completion(false)
+            }
+        }
+    }
+    
+    func sellCollectedVideo(_ video: Video, coinAmount: Int, completion: @escaping (Bool) -> Void) {
+        // 1) 먼저 영상 삭제(컬렉션) - 단순 로직
+        self.deleteCollectedVideo(video) { deleteSuccess in
+            if !deleteSuccess {
+                print("❌ sellCollectedVideo - 영상 삭제 실패")
                 completion(false)
                 return
             }
             
-            // ✅ 3. 코인 지급 (이제 외부에서 전달받은 `coinAmount` 사용)
-            userService.addCoins(amount: coinAmount)
-            print("✅ \(coinAmount) 코인 지급 완료!")
-            
-            completion(true)
+            // 2) Trade 문서도 삭제 (등록되어 있다면)
+            TradeService.shared.deleteTradeIfExists(
+                ownerId: self.userService.user?.id ?? "",
+                videoId: video.videoId
+            ) { tradeDeleted in
+                if !tradeDeleted {
+                    print("❌ Trade 삭제 오류 발생")
+                    completion(false)
+                    return
+                }
+                
+                // 3) 코인 지급
+                self.userService.addCoins(amount: coinAmount)
+                print("✅ \(coinAmount) 코인 지급 완료!")
+                completion(true)
+            }
         }
     }
-    
 }

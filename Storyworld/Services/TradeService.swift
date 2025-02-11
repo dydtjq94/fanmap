@@ -1,59 +1,100 @@
-//
-//  TradeService.swift
-//  Storyworld
-//
-//  Created by peter on 2/8/25.
-//
-
 import Foundation
 import FirebaseFirestore
 
 class TradeService {
     static let shared = TradeService()
-    private let db = Firestore.firestore()
+    private init() {}
     
-    private init() { }
-    
-    // MARK: - 1) 마켓에 새로운 영상 등록
-    func createMarketListing(from collectedVideo: CollectedVideo) async throws {
-        let listing = MarketListing(
+    /// 새 트레이드 생성 (유저 하위 `myTrades` 서브컬렉션)
+    func createTrade(for collectedVideo: CollectedVideo, completion: @escaping (Bool) -> Void) {
+        let db = Firestore.firestore()
+        
+        // 예: /users/{ownerId}/myTrades/{videoId}
+        let userRef = db.collection("users").document(collectedVideo.ownerId)
+        let myTradesRef = userRef.collection("myTrades")
+        
+        // 🔥 문서 ID를 video.videoId 로 사용 (중복등록 방지)
+        let videoId = collectedVideo.video.videoId
+        let newDoc = myTradesRef.document(videoId)
+        
+        let trade = Trade(
+            id: newDoc.documentID,    // = videoId
             video: collectedVideo.video,
             ownerId: collectedVideo.ownerId,
             tradeStatus: .available,
             createdDate: Date()
         )
         
-        // 문서 ID를 자동 생성할 수도 있고, videoId로 할 수도 있음
-        // 여기서는 "collectedVideo.id" (videoId)로 문서를 생성해보는 예시
-        try await db.collection("market")
-            .document(collectedVideo.id)
-            .setData(from: listing)
-        
-        print("✅ MarketListing 등록 완료: \(collectedVideo.video.title)")
-    }
-    
-    // MARK: - 2) 거래 가능한 목록 가져오기
-    func fetchAvailableListings() async throws -> [MarketListing] {
-        let snapshot = try await db.collection("market")
-            .whereField("tradeStatus", isEqualTo: TradeStatus.available.rawValue)
-            .getDocuments()
-        
-        let listings = try snapshot.documents.compactMap {
-            try $0.data(as: MarketListing.self)
+        do {
+            try newDoc.setData(from: trade)
+            print("✅ Trade 문서 생성 완료 (videoId=\(videoId))")
+            completion(true)
+        } catch {
+            print("❌ Error creating trade: \(error)")
+            completion(false)
         }
-        return listings
     }
     
-    // MARK: - 3) 마켓 등록 해제(삭제 or 상태변경)
-    func removeListing(withId listingId: String) async throws {
-        // Firestore 문서를 삭제(완전히 제거)하거나,
-        // tradeStatus = .notTradable 로 상태만 바꿀 수도 있음
-        try await db.collection("market")
-            .document(listingId)
-            .delete()
+    /// 특정 영상(videoId)에 해당하는 Trade 문서가 있다면 삭제
+    func deleteTradeIfExists(ownerId: String, videoId: String, completion: @escaping (Bool) -> Void) {
+        let db = Firestore.firestore()
+        let tradeDocRef = db
+            .collection("users").document(ownerId)
+            .collection("myTrades").document(videoId)
         
-        print("✅ MarketListing 문서(\(listingId)) 삭제 완료")
+        tradeDocRef.getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Trade 문서 조회 오류: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+            
+            // 문서가 존재하면 삭제
+            if snapshot?.exists == true {
+                tradeDocRef.delete { err in
+                    if let err = err {
+                        print("❌ Trade 문서 삭제 오류: \(err.localizedDescription)")
+                        completion(false)
+                    } else {
+                        print("🔥 Trade 문서 삭제 완료 (videoId = \(videoId))")
+                        completion(true)
+                    }
+                }
+            } else {
+                print("⚠️ 해당 Trade 문서가 없습니다. (이미 삭제되었거나 생성 안됨)")
+                completion(true) // 문서 없으니 문제없이 true 처리
+            }
+        }
+    }
+
+    /// 모든 트레이드 가져오기: Collection Group 쿼리
+    func fetchAllTrades(completion: @escaping ([Trade]) -> Void) {
+        let db = Firestore.firestore()
+        
+        // ⚠️ 주의: "myTrades" 라는 이름이 맞아야 함
+        db.collectionGroup("myTrades")
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ Error fetching trades: \(error.localizedDescription)")
+                    completion([])
+                    return
+                }
+                print("✅ Query succeeded. Document count: \(snapshot?.documents.count ?? 0)")
+                     
+                
+                guard let documents = snapshot?.documents else {
+                    completion([])
+                    return
+                }
+                
+                // Snapshot → Trade 배열로 디코딩
+                let trades: [Trade] = documents.compactMap { doc in
+                    return try? doc.data(as: Trade.self)
+                }
+                completion(trades)
+            }
     }
     
-    // 필요에 따라 거래 상세 조회, 거래 수락/거절 등 함수 추가
+    // 필요에 따라 추가할 함수들 (updateTradeStatus, fetchTradesByUser 등)
+    // ...
 }

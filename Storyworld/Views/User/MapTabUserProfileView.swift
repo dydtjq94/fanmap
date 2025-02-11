@@ -73,11 +73,12 @@ struct MapTabUserProfileView: View {
                     }
                 }
             }
-            .padding()
-            .background(Color(UIColor(hex:"#1B1B1B")))
-            .cornerRadius(12)
             .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color(UIColor(hex:"#1B1B1B")))
+            .cornerRadius(8)
             .padding(.top, 4)
+            .padding(.trailing, 12)
         }
         .onAppear {
             userService.loadProfileImage { image in

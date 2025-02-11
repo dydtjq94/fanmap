@@ -11,6 +11,18 @@ struct ProfileTab: View {
     @EnvironmentObject var userService: UserService
     @State private var showingSettings = false // 설정 시트 표시 여부를 관리하는 상태 변수
 
+    init() {
+        // 🔥 네비게이션 바의 Appearance 설정
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground() // 투명 배경 제거
+        appearance.backgroundColor = UIColor(hex: "#1D1D1D") // 원하는 색상 적용
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.white] // 타이틀 색상 설정
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white] // 큰 타이틀 색상 설정
+        
+        // 네비게이션 바에 Appearance 적용
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+    }
 
     var body: some View {
         ScrollView {
