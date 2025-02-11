@@ -138,7 +138,7 @@ struct DropResultView: View {
                     }) {
                         ZStack{
                             Circle()
-                                .frame(width: 36, height: 36)
+                                .frame(width: 36, height: 40)
                                 .foregroundColor(.gray)
                             Image(systemName: "square.and.arrow.up.circle.fill")
                                 .font(.system(size: 40, weight: .bold))

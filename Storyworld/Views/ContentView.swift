@@ -27,7 +27,7 @@ struct ContentView: View {
                 TradeTab()
             }
             .tabItem {
-                Label("거래", systemImage: "play.rectangle.on.rectangle.fill")
+                Label("트레이드", systemImage: "play.rectangle.on.rectangle.fill")
             }
             .tag(1)
             

@@ -52,6 +52,7 @@ struct CollectionItemView: View {
                 RarityBadgeView(rarity: collectedVideo.video.rarity)
             }
         }
+        .frame(maxWidth: .infinity)
         .contentShape(Rectangle())  // 터치 영역 확장
         .onTapGesture {
             UIImpactFeedbackGenerator.trigger(.light)

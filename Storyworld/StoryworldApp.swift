@@ -29,6 +29,7 @@ struct StoryworldApp: App {
                 } else if userService.user != nil {
                     ContentView()
                         .environmentObject(userService)
+                        .preferredColorScheme(.dark) // ✅ 앱 전체를 Dark Mode로 고정
                         .transition(.opacity)
                 } else {
                     StartView()

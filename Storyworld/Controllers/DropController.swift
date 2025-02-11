@@ -227,6 +227,7 @@ final class DropController: UIViewController {
     
     
     @objc private func dismissView() {
+        UIImpactFeedbackGenerator.trigger(.light)
         dismiss(animated: true, completion: nil)
     }
     
