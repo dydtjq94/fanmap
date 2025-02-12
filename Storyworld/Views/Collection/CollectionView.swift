@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct CollectionView: View {
-    @StateObject private var viewModel = CollectionViewModel()
+    @ObservedObject var viewModel = CollectionViewModel()
 
     var body: some View {
         VStack(alignment: .leading) {

@@ -79,10 +79,10 @@ struct PlaylistAllView: View {
                         Text("재생 목록 추가")
                             .font(.headline)
                             .foregroundColor(.black)
-                            .frame(width: 200) // ✅ 버튼 크기 고정
-                            .padding()
+                            .frame(width: 180, height: 50)
                             .background(Color(AppColors.mainColor))
-                            .cornerRadius(8)
+                            .cornerRadius(32)
+                            .shadow(radius: 4)
                     }
                     Spacer() // 우측 공간 확보
                 }

@@ -41,11 +41,9 @@ struct TradeView: View {
                 .padding(.vertical, 16)
                 .background(Color(UIColor(hex: "#1D1D1D")))
                 .cornerRadius(16)
-                .padding(.bottom, 20) // 섹션 간격
             }
         }
         .frame(maxWidth: .infinity)
-
         .onAppear {
             viewModel.loadRecentTrades()
         }

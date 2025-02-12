@@ -154,16 +154,18 @@ class UserService: ObservableObject {
 
     private let userDefaultsKey = "currentUser"
     
-    // MARK: - 앱 시작 시 UserDefaults → (필요 시) Firestore 동기화
+    // MARK: - 앱 시작 시 UserDefaults → Firestore 동기화
     func initializeUserIfNeeded() {
         DispatchQueue.main.async {
             if let savedUser = self.loadUserFromLocal() {
                 print("✅ 기존 유저 로드: \(savedUser.nickname)")
                 self.user = savedUser
                 
-                // 필요 시 Firestore에서 최신 정보 다시 가져오기
+                // ✅ Firestore에서 최신 유저 정보 동기화 + 컬렉션 & 플레이리스트 동기화
                 Task {
                     await self.fetchUserFromFirestore(userID: savedUser.id)
+                    await CollectionService.shared.syncCollectedVideosWithFirestore()
+                    await PlaylistService.shared.syncPlaylistsWithFirestore()
                 }
             } else {
                 print("⏩ 기존 유저 없음 (StartView 등에서 새 유저 생성 처리)")
@@ -171,8 +173,8 @@ class UserService: ObservableObject {
             }
         }
     }
-    
-    // MARK: - Firestore에서 유저 정보 가져오기(Dictionary 방식)
+
+    // MARK: - Firestore에서 유저 정보 가져오기 (컬렉션 + 플레이리스트 동기화 추가)
     func fetchUserFromFirestore(userID: String) async {
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(userID)
@@ -184,13 +186,11 @@ class UserService: ObservableObject {
                 return
             }
             
-            // Firestore의 Timestamp를 Date로 변환
             let tradeUpdatedTimestamp = data["tradeUpdated"] as? Timestamp
             let tradeUpdatedDate = tradeUpdatedTimestamp?.dateValue()
             
-            let tradeMemoStr = data["tradeMemo"] as? String // 없는 경우 nil
+            let tradeMemoStr = data["tradeMemo"] as? String
             
-            // Dictionary → User
             let fetchedUser = User(
                 id: data["id"] as? String ?? "",
                 email: data["email"] as? String ?? "",
@@ -206,14 +206,46 @@ class UserService: ObservableObject {
             
             print("✅ Firestore에서 유저 정보 가져옴: \(fetchedUser.nickname)")
             
-            // 가져온 정보 로컬에 반영
+            // ✅ Firestore에서 collectedVideos & playlists 가져와서 UserDefaults에 저장
+            async let collectedVideos = fetchCollectedVideos(userRef: userRef)
+            async let playlists = fetchPlaylists(userRef: userRef)
+            
+            let userCollectedVideos = await collectedVideos
+            let userPlaylists = await playlists
+            
+            UserDefaults.standard.saveCollectedVideos(userCollectedVideos) // ✅ UserDefaults에 저장
+            UserDefaults.standard.savePlaylists(userPlaylists) // ✅ UserDefaults에 저장
+
+            // ✅ 동기화된 유저 정보 로컬에 저장
             self.saveUserToLocal(fetchedUser)
             
         } catch {
             print("❌ Firestore에서 유저 정보 가져오기 실패: \(error.localizedDescription)")
         }
     }
-    
+
+    // ✅ Firestore에서 `collectedVideos` 서브컬렉션 가져오기
+    private func fetchCollectedVideos(userRef: DocumentReference) async -> [CollectedVideo] {
+        do {
+            let snapshot = try await userRef.collection("collectedVideos").getDocuments()
+            return snapshot.documents.compactMap { try? $0.data(as: CollectedVideo.self) }
+        } catch {
+            print("❌ collectedVideos 불러오기 실패: \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    // ✅ Firestore에서 `playlists` 서브컬렉션 가져오기
+    private func fetchPlaylists(userRef: DocumentReference) async -> [Playlist] {
+        do {
+            let snapshot = try await userRef.collection("playlists").getDocuments()
+            return snapshot.documents.compactMap { try? $0.data(as: Playlist.self) }
+        } catch {
+            print("❌ playlists 불러오기 실패: \(error.localizedDescription)")
+            return []
+        }
+    }
+
     // MARK: - 프로필 이미지 업로드
     func uploadProfileImage(_ image: UIImage, completion: @escaping (URL?) -> Void) {
         guard let user = self.user else { return }
@@ -237,7 +269,6 @@ class UserService: ObservableObject {
                     completion(nil)
                     return
                 }
-                
                 completion(url) // -> updateProfileImageURL에서 Firestore에 반영
             }
         }
@@ -431,9 +462,6 @@ class UserService: ObservableObject {
         user.experience += experienceReward
         user.balance += coinReward
         
-        // 📌 tradeUpdated = 현재 기기 시간을 기록 (Date())
-        user.tradeUpdated = Date()
-        
         let newLevel = UserStatusManager.shared.calculateLevel(from: user.experience)
         print("🎉 경험치: +\(experienceReward), 코인: +\(coinReward), 새 레벨: \(newLevel)")
         
@@ -446,9 +474,6 @@ class UserService: ObservableObject {
         let experienceReward = UserStatusManager.shared.getExperienceReward(for: video.rarity)
         user.experience += experienceReward
         user.balance -= amount
-        
-        // 📌 tradeUpdated = 현재 기기 시간을 기록 (Date())
-        user.tradeUpdated = Date()
         
         if user.balance < 0 { user.balance = 0 }
         

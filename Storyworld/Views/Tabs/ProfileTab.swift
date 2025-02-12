@@ -10,16 +10,16 @@ import SwiftUI
 struct ProfileTab: View {
     @EnvironmentObject var userService: UserService
     @State private var showingSettings = false // 설정 시트 표시 여부를 관리하는 상태 변수
+    @StateObject private var playlistViewModel = PlaylistViewModel()
+    @StateObject private var collectionViewModel = CollectionViewModel()
 
     init() {
         // 🔥 네비게이션 바의 Appearance 설정
         let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground() // 투명 배경 제거
-        appearance.backgroundColor = UIColor(hex: "#1D1D1D") // 원하는 색상 적용
-        appearance.titleTextAttributes = [.foregroundColor: UIColor.white] // 타이틀 색상 설정
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white] // 큰 타이틀 색상 설정
-        
-        // 네비게이션 바에 Appearance 적용
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(hex: "#1D1D1D")
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
     }
@@ -28,21 +28,21 @@ struct ProfileTab: View {
         ScrollView {
             VStack(spacing: 16) {
                 
-                // 유저 프로필 섹션
+                // ✅ 유저 프로필 섹션
                 if userService.user != nil {
                     UserProfileView()
                 } else {
                     ProgressView("Loading...")
                 }
-                
-                // 플레이리스트 섹션
-                PlaylistView()
-                
-                // 컬렉션 섹션
-                CollectionView()
+
+                // ✅ 플레이리스트 섹션
+                PlaylistView(viewModel: playlistViewModel)
+
+                // ✅ 컬렉션 섹션
+                CollectionView(viewModel: collectionViewModel)
             }
-            .padding(.horizontal, 16) // 좌우 패딩 적용
-            .padding(.bottom, 32) // 하단 패딩 적용
+            .padding(.horizontal, 16)
+            .padding(.bottom, 32)
             .padding(.top, 16)
         }
         .toolbar {
@@ -56,10 +56,16 @@ struct ProfileTab: View {
             }
         }
         .sheet(isPresented: $showingSettings) {
-            SettingsView() // 설정 시트로 표시할 뷰
+            SettingsView()
         }
         .refreshable {
-            userService.initializeUserIfNeeded()
+            Task {
+                userService.initializeUserIfNeeded() // ✅ 유저 데이터
+                DispatchQueue.main.async {
+                    playlistViewModel.loadPlaylists() // ✅ UI 업데이트
+                    collectionViewModel.loadVideos() // ✅ UI 업데이트
+                }
+            }
         }
         .background(Color(UIColor(hex:"#121212")))
     }

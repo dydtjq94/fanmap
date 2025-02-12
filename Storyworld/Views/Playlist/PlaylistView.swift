@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct PlaylistView: View {
-    @StateObject private var viewModel = PlaylistViewModel()
+    @ObservedObject var viewModel: PlaylistViewModel // ✅ 외부에서 주입
     @StateObject private var sheetManager = SheetManager()
     
     var body: some View {

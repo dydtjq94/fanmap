@@ -108,15 +108,15 @@ struct TradeOfferView: View {
                             Text("제안하기")
                                 .font(.headline)
                                 .foregroundColor(.black)
-                                .frame(width: 200) // ✅ 버튼 크기 고정
-                                .padding()
+                                .frame(width: 180, height: 50)
                                 .background(Color(AppColors.mainColor))
-                                .cornerRadius(8)
+                                .cornerRadius(32)
+                                .shadow(radius: 4)
                         }
                         .cornerRadius(8)
                         .padding(.bottom, 12)
                         .transition(.move(edge: .bottom).combined(with: .opacity)) // 🔥 아래에서 올라오는 애니메이션
-                        .animation(.easeInOut(duration: 0.3), value: selectedVideos.count) // ✅ 부드러운 애니메이션 적용
+                        .animation(.easeInOut(duration: 0.3), value: selectedVideos.count)
                     }
                 }
             }

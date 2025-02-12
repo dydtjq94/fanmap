@@ -215,53 +215,64 @@ class LoginService: ObservableObject {
         }
     }
     
-    // ✅ 회원탈퇴 기능 (Firestore 및 Firebase Auth에서 계정 삭제)
     func deleteAccount() async {
         guard let user = Auth.auth().currentUser else {
             print("❌ 현재 로그인된 유저가 없습니다.")
             return
         }
-        
+
         let uid = user.uid
         let db = Firestore.firestore()
         let userRef = db.collection("users").document(uid)
-        
+
         do {
-            // ✅ 1. Firestore에서 유저 데이터 삭제
+            // ✅ Firestore에서 유저 데이터 삭제
             try await userRef.delete()
             print("🔥 Firestore에서 유저 데이터 삭제 완료")
-            
-            // ✅ 2. Firestore의 `collectedVideos` 서브컬렉션 삭제
+
+            // ✅ Firestore의 `collectedVideos` 서브컬렉션 삭제
             let collectedVideosRef = userRef.collection("collectedVideos")
             let collectedVideos = try await collectedVideosRef.getDocuments()
             for document in collectedVideos.documents {
                 try await document.reference.delete()
             }
             print("🔥 Firestore에서 collectedVideos 삭제 완료")
-            
-            // ✅ 3. Firestore의 `playlists` 서브컬렉션 삭제
+
+            // ✅ Firestore의 `playlists` 서브컬렉션 삭제
             let playlistsRef = userRef.collection("playlists")
             let playlists = try await playlistsRef.getDocuments()
             for document in playlists.documents {
                 try await document.reference.delete()
             }
             print("🔥 Firestore에서 playlists 삭제 완료")
-            
-            // ✅ 4. Firebase Auth에서 유저 계정 삭제
+
+            // ✅ Firestore의 `myTrades` 서브컬렉션 삭제
+            let myTradesRef = userRef.collection("myTrades")
+            let myTrades = try await myTradesRef.getDocuments()
+            for document in myTrades.documents {
+                try await document.reference.delete()
+            }
+            print("🔥 Firestore에서 myTrades 삭제 완료")
+
+            // ✅ Firebase Auth에서 유저 계정 삭제
             try await user.delete()
             print("🔥 Firebase Authentication에서 계정 삭제 완료")
-            
-            // ✅ 5. 로그아웃 및 UserDefaults 초기화
-            signOut()
-            
-            print("✅ 회원탈퇴 완료")
-            
+
+            // ✅ 🔥 강제 로그아웃 실행
+            try Auth.auth().signOut()
+            print("✅ 강제 로그아웃 완료!")
+
+            // ✅ UserDefaults 초기화 (필요하면 추가)
+            UserDefaults.standard.removeObject(forKey: "userSession") // ✅ 저장된 유저 데이터 초기화
+            UserDefaults.standard.synchronize()
+
+            print("✅ 회원탈퇴 완료, 앱을 초기 상태로 복원")
+
         } catch {
             print("❌ 회원탈퇴 실패: \(error.localizedDescription)")
         }
     }
-    
-    
+
     // ✅ Nonce 관련 함수
     private func randomNonceString(length: Int = 32) -> String {
         let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")

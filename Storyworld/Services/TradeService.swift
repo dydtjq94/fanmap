@@ -7,6 +7,30 @@ class TradeService {
     
     private let db = Firestore.firestore()
     
+    func fetchUserTrades(userId: String, status: TradeStatus, completion: @escaping ([Trade]) -> Void) {
+        let db = Firestore.firestore()
+        let tradesRef = db.collection("users").document(userId).collection("myTrades")
+
+        tradesRef.whereField("tradeStatus", isEqualTo: status.rawValue)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ [fetchUserTrades] 트레이드 가져오기 실패: \(error.localizedDescription)")
+                    completion([])
+                    return
+                }
+
+                guard let documents = snapshot?.documents else {
+                    completion([])
+                    return
+                }
+
+                let trades: [Trade] = documents.compactMap { try? $0.data(as: Trade.self) }
+                print("✅ [fetchUserTrades] \(status.rawValue) 상태 트레이드 불러오기 완료: \(trades.count)개")
+                completion(trades)
+            }
+    }
+
+    
     /// 최신 20명의 유저를 가져온 후, 각 유저별 "available" 상태 트레이드 가져오기
     func fetchAvailableTradesForUsers(users: [User], completion: @escaping ([Trade]) -> Void) {
         var allTrades: [Trade] = []
@@ -61,43 +85,89 @@ class TradeService {
             createdDate: Date()
         )
         
-        do {
-            try tradeDocRef.setData(from: trade)
-            print("✅ [createTrade] Trade 문서 생성 완료 (tradeId=\(tradeId), videoId=\(trade.video.videoId))")
-            completion(true)
-        } catch {
-            print("❌ [createTrade] Trade 생성 오류: \(error.localizedDescription)")
-            completion(false)
-        }
-    }
-    
-    /// 특정 영상(videoId)에 해당하는 Trade 문서가 있다면 삭제
-    func deleteTradeIfExists(ownerId: String, videoId: String, completion: @escaping (Bool) -> Void) {
-        let tradeDocRef = db.collection("users").document(ownerId).collection("myTrades").document(videoId)
-        
-        tradeDocRef.getDocument { snapshot, error in
-            if let error = error {
-                print("❌ [deleteTradeIfExists] Trade 조회 오류: \(error.localizedDescription)")
-                completion(false)
-                return
+        let now = Date() // ✅ 현재 시간 저장
+
+        db.runTransaction { transaction, errorPointer in
+            do {
+                // ✅ 1. 새로운 트레이드 문서 저장
+                try transaction.setData(from: trade, forDocument: tradeDocRef)
+
+                // ✅ 2. 유저 문서의 `tradeUpdated` 필드 갱신 (현재 시간으로 업데이트)
+                transaction.updateData(["tradeUpdated": FieldValue.serverTimestamp()], forDocument: userRef)
+
+                print("✅ [createTrade] Trade 생성 완료 (tradeId=\(tradeId), videoId=\(trade.video.videoId))")
+                return nil
+            } catch {
+                errorPointer?.pointee = error as NSError
+                print("❌ [createTrade] Trade 생성 오류: \(error.localizedDescription)")
+                return nil
             }
-            
-            if snapshot?.exists == true {
-                tradeDocRef.delete { err in
-                    if let err = err {
-                        print("❌ [deleteTradeIfExists] Trade 삭제 오류: \(err.localizedDescription)")
-                        completion(false)
-                    } else {
-                        print("🔥 [deleteTradeIfExists] Trade 문서 삭제 완료 (videoId=\(videoId))")
-                        completion(true)
-                    }
-                }
+        } completion: { success, error in
+            if let error = error {
+                print("❌ [createTrade] Firestore 트랜잭션 실패: \(error.localizedDescription)")
+                completion(false)
             } else {
-                print("⚠️ [deleteTradeIfExists] 해당 Trade 문서 없음 (이미 삭제됨)")
+                print("✅ [createTrade] Trade 생성 및 tradeUpdated 필드 갱신 완료!")
+
+                // ✅ 3. tradeUpdated를 UserDefaults에도 즉시 반영
+                if var user = UserService.shared.user {
+                    user.tradeUpdated = now
+                    UserService.shared.saveUser(user)
+                    print("✅ [createTrade] tradeUpdated UserDefaults 저장 완료! \(now)")
+                }
                 completion(true)
             }
         }
     }
+
+    /// 특정 트레이드(tradeId)에 해당하는 Trade 문서가 있다면 삭제
+    func deleteTradeIfExists(ownerId: String, tradeId: String, completion: @escaping (Bool) -> Void) {
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(ownerId)
+        let tradeDocRef = userRef.collection("myTrades").document(tradeId)
+        
+        let now = Date() // ✅ 현재 시간 저장
+        
+        db.runTransaction { transaction, errorPointer in
+            do {
+                let tradeDoc = try transaction.getDocument(tradeDocRef)
+
+                if tradeDoc.exists {
+                    // ✅ 1. 트레이드 문서 삭제
+                    transaction.deleteDocument(tradeDocRef)
+
+                    // ✅ 2. 유저 문서의 `tradeUpdated` 필드 갱신 (현재 시간으로 업데이트)
+                    transaction.updateData(["tradeUpdated": FieldValue.serverTimestamp()], forDocument: userRef)
+
+                    print("🔥 [deleteTradeIfExists] Trade 문서 삭제 완료 (tradeId=\(tradeId))")
+                    return nil
+                } else {
+                    print("⚠️ [deleteTradeIfExists] 해당 Trade 문서 없음 (이미 삭제됨)")
+                    return nil
+                }
+            } catch {
+                errorPointer?.pointee = error as NSError
+                print("❌ [deleteTradeIfExists] Trade 삭제 오류: \(error.localizedDescription)")
+                return nil
+            }
+        } completion: { success, error in
+            if let error = error {
+                print("❌ [deleteTradeIfExists] Firestore 트랜잭션 실패: \(error.localizedDescription)")
+                completion(false)
+            } else {
+                print("✅ [deleteTradeIfExists] Trade 삭제 및 tradeUpdated 필드 갱신 완료!")
+
+                // ✅ 3. tradeUpdated를 UserDefaults에도 즉시 반영
+                if var user = UserService.shared.user {
+                    user.tradeUpdated = now
+                    UserService.shared.saveUser(user)
+                    print("✅ [deleteTradeIfExists] tradeUpdated UserDefaults 저장 완료! \(now)")
+                }
+                completion(true)
+            }
+        }
+    }
+
     
     /// Trade 상태 업데이트 (예: "available" → "pending" → "done")
     func updateTradeStatus(ownerId: String, videoId: String, newStatus: String, completion: @escaping (Bool) -> Void) {
@@ -158,12 +228,12 @@ class TradeService {
         }
     }
     
-    /// ✅ Offer 승인 시 영상 교환 로직 포함
+    /// ✅ Offer 승인 시 영상 교환 로직 포함 (UserDefaults에서도 반영)
     func acceptOffer(for trade: Trade, offerId: String, completion: @escaping (Bool) -> Void) {
         let db = Firestore.firestore()
         let tradeRef = db.collection("users").document(trade.ownerId).collection("myTrades").document(trade.id)
         let offerRef = tradeRef.collection("offer").document(offerId)
-        
+
         db.runTransaction { transaction, errorPointer in
             do {
                 // 1️⃣ Offer 문서 확인
@@ -172,16 +242,22 @@ class TradeService {
                       let proposerId = offerData["proposerId"] as? String,
                       let offeredVideos = offerData["offeredVideos"] as? [[String: Any]] else {
                     print("⚠️ [acceptOffer] Offer 문서가 올바르지 않음")
-                    return nil as Any? // ✅ 반환 타입 맞춰서 수정
+                    return nil
                 }
-                
+
                 // 2️⃣ 트레이드 상태 변경 (pending → done)
                 transaction.updateData(["tradeStatus": "done"], forDocument: tradeRef)
-                
+
                 // 3️⃣ 서로의 `collectedVideos` 교환 로직
                 let ownerRef = db.collection("users").document(trade.ownerId).collection("collectedVideos")
                 let proposerRef = db.collection("users").document(proposerId).collection("collectedVideos")
-                
+
+                // ✅ UserDefaults에서 기존 영상 제거
+                var localVideos = UserDefaults.standard.loadCollectedVideos()
+                localVideos.removeAll { $0.video.videoId == trade.video.videoId }
+                UserDefaults.standard.saveCollectedVideos(localVideos)
+                print("🔥 [acceptOffer] UserDefaults에서 내 영상 제거 완료")
+
                 // 🔥 3-1) 내 영상 → 상대방의 `collectedVideos` 에 추가
                 let myTradeVideo = trade.video
                 let newOwnerCollectedVideo = CollectedVideo(
@@ -194,7 +270,7 @@ class TradeService {
                 )
                 let newOwnerVideoRef = proposerRef.document(myTradeVideo.videoId)
                 try transaction.setData(from: newOwnerCollectedVideo, forDocument: newOwnerVideoRef)
-                
+
                 // 🔥 3-2) 상대방이 제안한 영상들 → 내 `collectedVideos` 에 추가
                 for videoData in offeredVideos {
                     guard let videoId = videoData["videoId"] as? String,
@@ -204,9 +280,9 @@ class TradeService {
                           let publishDateTimestamp = videoData["publishDate"] as? Timestamp,
                           let rarityRaw = videoData["rarity"] as? String,
                           let rarity = VideoRarity(rawValue: rarityRaw) else { continue }
-                    
+
                     let publishDate = publishDateTimestamp.dateValue() // Firestore Timestamp → Date 변환
-                    
+
                     let newVideo = CollectedVideo(
                         id: videoId,
                         video: Video(
@@ -222,22 +298,32 @@ class TradeService {
                         isFavorite: false,
                         ownerId: trade.ownerId
                     )
-                    
+
                     let newVideoRef = ownerRef.document(videoId)
                     try transaction.setData(from: newVideo, forDocument: newVideoRef)
+
+                    // ✅ UserDefaults에도 추가
+                    localVideos.append(newVideo)
                 }
-                
+
                 // 🔥 4) 서로의 기존 영상 삭제 (거래 완료된 영상들)
                 let myVideoRef = ownerRef.document(myTradeVideo.videoId)
                 transaction.deleteDocument(myVideoRef)
-                
+
                 for videoData in offeredVideos {
                     if let videoId = videoData["videoId"] as? String {
                         let proposerVideoRef = proposerRef.document(videoId)
                         transaction.deleteDocument(proposerVideoRef)
+
+                        // ✅ UserDefaults에서도 삭제
+                        localVideos.removeAll { $0.video.videoId == videoId }
                     }
                 }
-                
+
+                // ✅ UserDefaults에 최종 저장
+                UserDefaults.standard.saveCollectedVideos(localVideos)
+                print("🔥 [acceptOffer] UserDefaults에 최종 반영 완료")
+
                 return nil
             } catch {
                 errorPointer?.pointee = error as NSError
@@ -248,11 +334,12 @@ class TradeService {
                 print("❌ [acceptOffer] Offer 승인 실패: \(error.localizedDescription)")
                 completion(false)
             } else {
-                print("✅ [acceptOffer] Offer 승인 완료, 트레이드 상태 업데이트 및 영상 교환 완료!")
+                print("✅ [acceptOffer] Offer 승인 완료, Trade 상태 업데이트 및 영상 교환 완료!")
                 completion(true)
             }
         }
     }
+
     
     /// Offer 거절 (트레이드 다시 available 상태로 복구)
     func rejectOffer(for trade: Trade, offerId: String, completion: @escaping (Bool) -> Void) {

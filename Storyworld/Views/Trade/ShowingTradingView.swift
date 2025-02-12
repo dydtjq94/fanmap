@@ -37,11 +37,12 @@ struct ShowingTradingView: View {
             .onAppear {
                 viewModel.loadReceivedOffers() // ✅ Firestore에서 받은 오퍼 불러오기
             }
-            .navigationTitle("받은 트레이드 요청") // ✅ 상단 제목 추가
+            .navigationTitle("트레이드 요청") // ✅ 상단 제목 추가
             .navigationBarTitleDisplayMode(.inline) // ✅ 작은 제목 스타일
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
+                        UIImpactFeedbackGenerator.trigger(.light)
                         presentationMode.wrappedValue.dismiss()
                     }) {
                         Image(systemName: "chevron.down") // 🔽 닫기 버튼
