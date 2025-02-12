@@ -74,11 +74,11 @@ enum VideoRarity: String, Codable, CaseIterable  {
         case .silver:
             return 0.8
         case .gold:
-            return 0.17
+            return 0.197
         case .diamond:
-            return 0.029
+            return 0.0029
         case .ruby:
-            return 0.001
+            return 0.0001
         }
     }
 }

@@ -19,3 +19,8 @@ struct User: Codable, Equatable {
     var tradeUpdated: Date?
     var tradeMemo: String?
 }
+
+struct UserCacheEntry: Codable {
+    let user: User
+    let fetchedAt: Date
+}

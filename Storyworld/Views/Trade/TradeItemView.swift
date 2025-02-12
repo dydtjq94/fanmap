@@ -13,7 +13,7 @@ struct TradeItemView: View {
 //    @State private var showingDetail = false
     
     var body: some View {
-        NavigationLink(destination: TradeVideoView(video: trade.video, rarity: trade.video.rarity)) {
+        NavigationLink(destination: TradeVideoView(trade: trade)) {
             HStack(alignment: .top) {
                 // 썸네일 (유튜브 이미지 URL 예시)
                 AsyncImage(url: URL(string: "https://img.youtube.com/vi/\(trade.video.videoId)/mqdefault.jpg")) { image in
@@ -52,14 +52,13 @@ struct TradeItemView: View {
                     // 희귀도 배지
                     RarityBadgeView(rarity: trade.video.rarity)
                 }
+                Spacer()
             }
         }
+        .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
         .simultaneousGesture(TapGesture().onEnded {
             UIImpactFeedbackGenerator.trigger(.light)
         })
-//        .sheet(isPresented: $showingDetail) {
-//            TradeVideoView(video: trade.video, rarity: trade.video.rarity)
-//        }
     }
 }

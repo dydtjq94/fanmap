@@ -50,10 +50,12 @@ struct CollectionView: View {
                         CollectionItemView(collectedVideo: collectedVideo)
                     }
                 }
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
             }
         }
+        .frame(maxWidth: .infinity)
         .background(Color(UIColor(hex:"#1D1D1D")))
         .cornerRadius(16)
         .onAppear {

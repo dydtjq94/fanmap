@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct TradeTab: View {
-    @State private var showingSettings = false // 설정 시트 표시 여부를 관리하는 상태 변수
+    @State private var showingTrading = false // 설정 시트 표시 여부를 관리하는 상태 변수
     
     var body: some View {
         ScrollView {
@@ -24,14 +24,15 @@ struct TradeTab: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
-                    showingSettings.toggle()
+                    UIImpactFeedbackGenerator.trigger(.light)
+                    showingTrading.toggle()
                 }) {
                     Image(systemName: "bell") // 설정 아이콘
                 }
             }
         }
-        .sheet(isPresented: $showingSettings) {
-//            SettingsView() 
+        .sheet(isPresented: $showingTrading) {
+            ShowingTradingView()
         }
     }
 }

@@ -73,16 +73,16 @@ struct PlaylistAllView: View {
                 HStack {
                     Spacer() // 좌측 공간 확보
                     Button(action: {
+                        UIImpactFeedbackGenerator.trigger(.light)
                         showAddPlaylistAlert = true
                     }) {
                         Text("재생 목록 추가")
                             .font(.headline)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.red.opacity(0.8))
-                            .foregroundColor(.white)
-                            .cornerRadius(24)
-                            .shadow(radius: 5)
+                            .foregroundColor(.black)
+                            .frame(width: 200) // ✅ 버튼 크기 고정
+                            .padding()
+                            .background(Color(AppColors.mainColor))
+                            .cornerRadius(8)
                     }
                     Spacer() // 우측 공간 확보
                 }
@@ -99,9 +99,11 @@ struct PlaylistAllView: View {
                 TextField("재생 목록 이름", text: $newPlaylistName)
                 HStack {
                     Button("취소", role: .cancel) {
+                        UIImpactFeedbackGenerator.trigger(.light)
                         showAddPlaylistAlert = false
                     }
                     Button("추가") {
+                        UIImpactFeedbackGenerator.trigger(.light)
                         Task {
                             if let newPlaylist = await PlaylistService.shared.createNewPlaylist(name: newPlaylistName) {
                                 DispatchQueue.main.async {

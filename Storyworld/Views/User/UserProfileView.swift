@@ -112,15 +112,6 @@ struct UserProfileView: View {
                         }
                         
                         HStack(spacing: 2) {
-                            Image(systemName: "inset.filled.diamond")
-                                .foregroundColor(Color(UIColor(hex: "#00FFFF")))
-                                .font(.system(size: 12))
-                            Text("\(userService.user?.gems ?? 0)")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(Color(UIColor(hex: "#7E7E7E")))
-                        }
-                        
-                        HStack(spacing: 2) {
                             Image(systemName: "dollarsign.circle.fill")
                                 .foregroundColor(Color(UIColor(hex: "#FFD700")))
                                 .font(.system(size: 12))

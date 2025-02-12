@@ -48,6 +48,7 @@ struct ProfileTab: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
+                    UIImpactFeedbackGenerator.trigger(.light)
                     showingSettings.toggle()
                 }) {
                     Image(systemName: "gearshape") // 설정 아이콘

@@ -2,14 +2,6 @@
 //  TradeView.swift
 //  Storyworld
 //
-//  Created by peter on 2/11/25.
-//
-
-
-//
-//  TradeView.swift
-//  Storyworld
-//
 //  Created by peter on 2/25/25.
 //
 
@@ -55,7 +47,7 @@ struct TradeView: View {
         .frame(maxWidth: .infinity)
 
         .onAppear {
-            viewModel.loadTrades()
+            viewModel.loadRecentTrades()
         }
     }
     
@@ -97,7 +89,7 @@ struct TradeView: View {
                 // 닉네임 + memo
                 VStack(alignment: .leading, spacing: 2) {
                     Text(user.nickname)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 16, weight: .black))
                         .foregroundColor(.white)
                 }
             }

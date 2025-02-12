@@ -16,12 +16,6 @@ struct Video: Codable, Equatable, Hashable {
     var rarity: VideoRarity
 }
 
-enum TradeStatus: String, Codable {
-    case available = "available"  // 거래 가능
-    case pending = "pending"  // 거래 진행 중
-    case notTradable = "not_tradable"  // 거래 불가능
-}
-
 struct CollectedVideo: Codable, Equatable, Hashable, Identifiable {
     var id: String  // Firestore 문서 ID (videoId 사용 X)
     let video: Video  // 원본 영상 정보

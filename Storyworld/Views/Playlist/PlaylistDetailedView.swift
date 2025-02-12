@@ -155,12 +155,11 @@ struct PlaylistDetailedView: View {
                         }) {
                             Text("영상 추가")
                                 .font(.headline)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color.red.opacity(0.8))
-                                .foregroundColor(.white)
-                                .cornerRadius(24)
-                                .shadow(radius: 5)
+                                .foregroundColor(.black)
+                                .frame(width: 200) // ✅ 버튼 크기 고정
+                                .padding()
+                                .background(Color(AppColors.mainColor))
+                                .cornerRadius(8)
                         }
                         Spacer()
                     }
@@ -170,6 +169,7 @@ struct PlaylistDetailedView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
+                        UIImpactFeedbackGenerator.trigger(.light)
                         showActionSheet = true
                     }) {
                         Image(systemName: "gearshape.fill")
@@ -182,6 +182,7 @@ struct PlaylistDetailedView: View {
                     title: Text("Playlist Setting"),
                     buttons: [
                         .destructive(Text("플레이리스트 삭제")) {
+                            UIImpactFeedbackGenerator.trigger(.light)
                             showDeleteConfirmationAlert = true
                         },
                         .cancel()
@@ -191,8 +192,11 @@ struct PlaylistDetailedView: View {
             .alert("정말 삭제하시겠습니까?", isPresented: $showDeleteConfirmationAlert) {
                 VStack {
                     HStack {
-                        Button("취소", role: .cancel) {}
+                        Button("취소", role: .cancel) {
+                            UIImpactFeedbackGenerator.trigger(.light)
+                        }
                         Button("삭제", role: .destructive) {
+                            UIImpactFeedbackGenerator.trigger(.light)
                             Task {
                                 await PlaylistService.shared.removePlaylist(currentPlaylist.id)
                             }

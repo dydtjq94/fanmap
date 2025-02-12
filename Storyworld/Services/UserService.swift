@@ -15,59 +15,143 @@ class UserService: ObservableObject {
     static let shared = UserService()
     @Published var user: User?
     
-    // ✅ 다른 유저들 캐시: [userId: (User, fetchedAt)]
-    private var cachedUsers: [String: (user: User, fetchedAt: Date)] = [:]
-    private let timeToLive: TimeInterval = 24 * 60 * 60 // 24시간
+    private init() {
+        loadUserCache() // ✅ 앱 실행 시 캐시 불러오기
+    }
+
+    private let db = Firestore.firestore()
+    private let cacheKey = "cachedUsers"
+    private let timeToLive: TimeInterval = 12 * 60 * 60 // 12시간 (초 단위)
     
-    // MARK: - 다른 유저 정보 가져오기 (24h TTL)
-    /// TradeTab 등에서 'ownerId'가 필요할 때 호출
+    /// ✅ UserDefaults에서 불러온 유저 캐시
+    private var cachedUsers: [String: UserCacheEntry] = [:] {
+        didSet { saveUsersToCache(users: cachedUsers.values.map { $0.user }) }
+    }
+
+    // MARK: - 📌 최신 20명의 유저 가져오기 (캐시에 저장)
+    
+    /// 유저를 가져와 12시간 캐시에 저장
+    func fetchRecentUsers(limit: Int = 20, completion: @escaping ([User]) -> Void) {
+        db.collection("users")
+            .order(by: "tradeUpdated", descending: true) // ✅ 최신 활동순 정렬
+            .limit(to: limit)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ [fetchRecentUsers] 유저 가져오기 오류: \(error.localizedDescription)")
+                    completion([])
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    completion([])
+                    return
+                }
+                
+                let users: [User] = documents.compactMap { try? $0.data(as: User.self) }
+                print("✅ 최신 \(users.count)명의 유저 가져오기 완료!")
+
+                // ✅ 유저 데이터를 12시간 캐시에 저장
+                self.saveUsersToCache(users: users)
+                
+                completion(users)
+            }
+    }
+    
+    // MARK: - 📌 캐시 관리 (UserDefaults)
+
+    /// ✅ 기존 캐시를 유지하면서 최신 데이터만 갱신 (중복 방지)
+    private func saveUsersToCache(users: [User]) {
+        let encoder = JSONEncoder()
+        
+        /// 1️⃣ 기존 캐시 불러오기
+        var cachedUsers: [String: UserCacheEntry] = loadUserCache() // ✅ 올바른 타입으로 초기화!
+
+        
+        // 2️⃣ 중복 제거: 가져온 유저 목록에서 동일한 userId가 여러 번 저장되지 않도록 `Set` 사용
+        let uniqueUsers = Dictionary(uniqueKeysWithValues: users.map { ($0.id, $0) })
+
+        // 3️⃣ 기존 캐시에 최신 데이터 업데이트
+        for (userId, user) in uniqueUsers {
+            cachedUsers[userId] = UserCacheEntry(user: user, fetchedAt: Date()) // ✅ 기존 데이터 유지하면서 최신 데이터만 업데이트
+            print("🔥 [saveUsersToCache] 캐시에 저장: \(user.nickname) (ID=\(userId)), 프로필: \(user.profileImageURL ?? "없음")")
+        }
+
+        // 4️⃣ 새로운 캐시 저장
+        if let encoded = try? encoder.encode(cachedUsers) {
+            UserDefaults.standard.set(encoded, forKey: cacheKey)
+            print("✅ [User Cache] \(cachedUsers.count)명의 유저 정보 저장 완료 (12시간 TTL)")
+        }
+    }
+
+
+    /// ✅ UserDefaults에서 유저 캐시 불러오기
+    private func loadUserCache() -> [String: UserCacheEntry] {
+        let decoder = JSONDecoder()
+
+        if let savedData = UserDefaults.standard.data(forKey: cacheKey),
+           let decoded = try? decoder.decode([String: UserCacheEntry].self, from: savedData) {
+
+            // 1️⃣ TTL(12시간) 초과된 캐시는 제거
+            let validCache = decoded.filter { Date().timeIntervalSince($0.value.fetchedAt) < timeToLive }
+            
+            print("✅ [User Cache] \(validCache.count)명의 유저 정보 복원 완료!")
+            return validCache // ✅ 반환값 추가!
+        }
+
+        print("⚠️ [User Cache] 저장된 캐시 없음 (최초 실행이거나 만료됨)")
+        return [:] // ✅ 빈 딕셔너리 반환!
+    }
+
+    // MARK: - 📌 개별 유저 정보 가져오기 (캐시 + Firestore)
     func fetchUserById(_ userId: String, completion: @escaping (User?) -> Void) {
-        // 1) 캐시에 있으면 & 유효기간 이내라면 반환
+        print("🔍 [fetchUserById] 요청된 userId: \(userId)")
+
+        // ✅ 캐시에서 유저 확인
         if let cached = cachedUsers[userId] {
             let elapsed = Date().timeIntervalSince(cached.fetchedAt)
             if elapsed < timeToLive {
+                print("✅ [fetchUserById] 캐시 HIT! (userId=\(userId)), 닉네임: \(cached.user.nickname), 프로필: \(cached.user.profileImageURL ?? "없음")")
                 completion(cached.user)
                 return
             } else {
-                // 만료
+                print("⚠️ [fetchUserById] 캐시 만료됨, Firestore에서 다시 가져옴 (userId=\(userId))")
                 cachedUsers.removeValue(forKey: userId)
             }
         }
-        
-        // 2) Firestore에서 문서 가져오기
-        let db = Firestore.firestore()
+
+        // ✅ Firestore 요청이 발생하는 경우만 로그 출력
+        print("🔥 [fetchUserById] Firestore에서 새 데이터 가져옴! (userId=\(userId))")
+
         let userRef = db.collection("users").document(userId)
         
         userRef.getDocument { snapshot, error in
             if let error = error {
-                print("❌ fetchUserById 에러: \(error.localizedDescription)")
+                print("❌ [fetchUserById] Firestore 에러: \(error.localizedDescription) (userId=\(userId))")
                 completion(nil)
                 return
             }
             
             guard let snapshot = snapshot, snapshot.exists else {
-                print("⚠️ 해당 user 문서 없음 (userId=\(userId))")
+                print("⚠️ [fetchUserById] Firestore에서 해당 user 문서 없음 (userId=\(userId))")
                 completion(nil)
                 return
             }
             
             do {
                 let fetchedUser = try snapshot.data(as: User.self)
-                // 3) 캐시에 저장 (fetchedAt = now)
-                self.cachedUsers[userId] = (fetchedUser, Date())
+                
+                // ✅ Firestore에서 가져온 데이터를 캐시에 저장
+                self.cachedUsers[userId] = UserCacheEntry(user: fetchedUser, fetchedAt: Date())
+
+                print("🔥 [fetchUserById] Firestore에서 유저 정보 가져옴! (userId=\(userId)), 닉네임: \(fetchedUser.nickname), 프로필: \(fetchedUser.profileImageURL ?? "없음")")
                 completion(fetchedUser)
             } catch {
-                print("❌ 디코딩 오류: \(error)")
+                print("❌ [fetchUserById] 디코딩 오류: \(error.localizedDescription) (userId=\(userId))")
                 completion(nil)
             }
         }
     }
-    
-    // 만약 앱 재시작 시 캐시를 날리려면
-    func clearOtherUsersCache() {
-        cachedUsers.removeAll()
-    }
-    
+
     private let userDefaultsKey = "currentUser"
     
     // MARK: - 앱 시작 시 UserDefaults → (필요 시) Firestore 동기화
@@ -269,59 +353,59 @@ class UserService: ObservableObject {
     }
     
     // MARK: - UserDefaults 저장/로드 - (로컬 전용)
-        func loadUserFromLocal() -> User? {
-            if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-                do {
-                    let decodedUser = try JSONDecoder().decode(User.self, from: data)
-                    return decodedUser
-                } catch {
-                    print("Error decoding user: \(error)")
-                    return nil
-                }
+    func loadUserFromLocal() -> User? {
+        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
+            do {
+                let decodedUser = try JSONDecoder().decode(User.self, from: data)
+                return decodedUser
+            } catch {
+                print("Error decoding user: \(error)")
+                return nil
             }
-            return nil
         }
+        return nil
+    }
     
     func saveUserToLocal(_ user: User) {
-           do {
-               let encoded = try JSONEncoder().encode(user)
-               UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
-               // 메모리 상태도 업데이트
-               DispatchQueue.main.async {
-                   self.user = user
-               }
-               print("✅ User saved to UserDefaults.")
-           } catch {
-               print("Error encoding user: \(error)")
-           }
-       }
+        do {
+            let encoded = try JSONEncoder().encode(user)
+            UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
+            // 메모리 상태도 업데이트
+            DispatchQueue.main.async {
+                self.user = user
+            }
+            print("✅ User saved to UserDefaults.")
+        } catch {
+            print("Error encoding user: \(error)")
+        }
+    }
     
     // MARK: - Firestore 저장(Dictionary 방식) - (서버 전용)
-        func saveUserToFirestore(_ user: User) async {
-            let db = Firestore.firestore()
-            let userRef = db.collection("users").document(user.id)
-            
-            // User → Dictionary
-            let userData: [String: Any] = [
-                "id": user.id,
-                "email": user.email,
-                "nickname": user.nickname,
-                "profileImageURL": user.profileImageURL ?? "",
-                "bio": user.bio ?? "",
-                "experience": user.experience,
-                "balance": user.balance,
-                "gems": user.gems,
-                "tradeUpdated": user.tradeUpdated ?? Date(),
-                "tradeMemo": user.tradeMemo ?? ""
-            ]
-            
-            do {
-                try await userRef.setData(userData)
-                print("🔥 Firestore에 유저 정보 저장 성공: \(user.nickname)")
-            } catch {
-                print("❌ Firestore에 유저 정보 저장 실패: \(error.localizedDescription)")
-            }
+    func saveUserToFirestore(_ user: User) async {
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(user.id)
+        
+        // User → Dictionary
+        let userData: [String: Any] = [
+            "id": user.id,
+            "email": user.email,
+            "nickname": user.nickname,
+            "profileImageURL": user.profileImageURL ?? "",
+            "bio": user.bio ?? "",
+            "experience": user.experience,
+            "balance": user.balance,
+            "gems": user.gems,
+            "tradeUpdated": user.tradeUpdated ?? Date(),
+            "tradeMemo": user.tradeMemo ?? ""
+        ]
+        
+        do {
+            try await userRef.setData(userData)
+            print("🔥 Firestore에 유저 정보 저장 성공: \(user.nickname)")
+        } catch {
+            print("❌ Firestore에 유저 정보 저장 실패: \(error.localizedDescription)")
         }
+    }
     
     // MARK: - 로컬 + Firestore 동시 업데이트도 가능하게(옵션)
     /// 필요에 따라 Firestore까지 동기화하도록 flag 사용
