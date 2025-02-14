@@ -183,16 +183,23 @@ struct ManageTradingView: View {
         }
     }
     
-    // 트레이드 로드
+    // 트레이드 로드 후 메모도 로드하여 UI에 반영
     private func loadUserTrades() {
         // 트레이드 데이터를 로드하는 로직
         viewModel.loadUserTrades()  // viewModel에서 트레이드 불러오기
 
-        // 트레이드가 로드된 후에 내 컬렉션을 로드
+        // 트레이드가 로드된 후에 내 컬렉션을 로드하고, 트레이드 메모도 가져옴
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             // 약간의 지연을 주어 로드가 완료된 후 loadData 호출
             loadData()
+            loadTradeMemo()  // 트레이드 메모 로드
         }
+    }
+
+    // 트레이드 메모 로드
+    private func loadTradeMemo() {
+        // viewModel에서 tradeMemo 값을 가져와서 업데이트
+        tradeMemo = viewModel.fetchTradeMemo()
     }
 
     // 데이터 불러오는 메서드

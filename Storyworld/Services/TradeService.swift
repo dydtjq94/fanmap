@@ -99,6 +99,12 @@ class TradeService {
     
     // MARK: - 20개의 최신 트레이드 로드 (OwnerId별로 그룹화)
     func loadTrades(completion: @escaping (Result<[Trade], Error>) -> Void) {
+        // 현재 로그인한 유저 정보 가져오기
+        guard let currentUser = UserService.shared.user else {
+            completion(.failure(NSError(domain: "UserService", code: 401, userInfo: [NSLocalizedDescriptionKey: "User not logged in"])))
+            return
+        }
+
         // 'trades' 컬렉션에서 최근 날짜 순으로 20개 가져오기
         db.collection("trades")
             .whereField("tradeStatus", isEqualTo: "available")
@@ -109,12 +115,12 @@ class TradeService {
                     completion(.failure(error))
                     return
                 }
-                
+
                 guard let snapshot = snapshot else {
                     completion(.failure(NSError(domain: "TradeService", code: 404, userInfo: [NSLocalizedDescriptionKey: "No data found."])))
                     return
                 }
-                
+
                 // Firestore에서 가져온 데이터를 Trade 구조체로 디코딩
                 let trades: [Trade] = snapshot.documents.compactMap { document in
                     do {
@@ -125,11 +131,15 @@ class TradeService {
                         return nil
                     }
                 }
-                
+
+                // 본인 트레이드를 제외한 트레이드만 필터링
+                let filteredTrades = trades.filter { $0.ownerId != currentUser.id }
+
                 // 결과 반환
-                completion(.success(trades))
+                completion(.success(filteredTrades))
             }
     }
+
     
     func createTradeOffer(trade: Trade, offeredVideos: [Video], proposerId: String, completion: @escaping (Result<String, Error>) -> Void) {
         // 트레이드의 videoId에 해당하는 트레이드 상태 확인
