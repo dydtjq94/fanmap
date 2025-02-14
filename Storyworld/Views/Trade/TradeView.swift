@@ -49,52 +49,53 @@ struct TradeView: View {
     }
     
     @ViewBuilder
-    private func ownerHeaderView(ownerId: String) -> some View {
-        if let user = viewModel.userMap[ownerId] {
-            HStack(spacing: 8) {
-                // 프로필 (예: AsyncImage)
-                if let urlStr = user.profileImageURL,
-                   let url = URL(string: urlStr) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .empty:
-                            ProgressView()
-                                .frame(width: 24, height: 24)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 24, height: 24)
-                                .clipShape(Circle())
-                        case .failure(_):
-                            Image(systemName: "person.crop.circle.badge.exclamationmark")
-                                .resizable()
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(.gray)
-                        @unknown default:
-                            EmptyView()
-                                .frame(width: 24, height: 24)
-                        }
-                    }
-                } else {
-                    Image(systemName: "person.crop.circle.fill")
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(.gray)
-                }
-                
-                // 닉네임 + memo
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(user.nickname)
-                        .font(.system(size: 16, weight: .black))
-                        .foregroundColor(.white)
-                }
-            }
-        } else {
-            // 아직 로딩 안 됨
-            Text("Owner: \(ownerId)")
-                .font(.headline)
-                .foregroundColor(.white)
-        }
-    }
+     private func ownerHeaderView(ownerId: String) -> some View {
+         // 해당 ownerId에 맞는 사용자 정보를 가져옵니다.
+         if let user = viewModel.userMap[ownerId] {
+             HStack(spacing: 8) {
+                 // 프로필 (예: AsyncImage)
+                 if let urlStr = user.profileImageURL,
+                    let url = URL(string: urlStr) {
+                     AsyncImage(url: url) { phase in
+                         switch phase {
+                         case .empty:
+                             ProgressView()
+                                 .frame(width: 24, height: 24)
+                         case .success(let image):
+                             image
+                                 .resizable()
+                                 .scaledToFill()
+                                 .frame(width: 24, height: 24)
+                                 .clipShape(Circle())
+                         case .failure(_):
+                             Image(systemName: "person.crop.circle.badge.exclamationmark")
+                                 .resizable()
+                                 .frame(width: 24, height: 24)
+                                 .foregroundColor(.gray)
+                         @unknown default:
+                             EmptyView()
+                                 .frame(width: 24, height: 24)
+                         }
+                     }
+                 } else {
+                     Image(systemName: "person.crop.circle.fill")
+                         .resizable()
+                         .frame(width: 24, height: 24)
+                         .foregroundColor(.gray)
+                 }
+                 
+                 // 닉네임
+                 VStack(alignment: .leading, spacing: 2) {
+                     Text(user.nickname)
+                         .font(.system(size: 16, weight: .black))
+                         .foregroundColor(.white)
+                 }
+             }
+         } else {
+             // 아직 로딩 안 됨
+             Text("Owner: \(ownerId)")
+                 .font(.headline)
+                 .foregroundColor(.white)
+         }
+     }
 }

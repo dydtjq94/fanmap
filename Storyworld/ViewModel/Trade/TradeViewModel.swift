@@ -28,10 +28,21 @@ class TradeViewModel: ObservableObject {
     // OwnerId별로 트레이드 그룹화
     private func groupTradesByOwner() {
         let grouped = Dictionary(grouping: trades, by: { $0.ownerId })
-        for (ownerId, tradesForOwner) in grouped {
-            // 예시로 유저 정보를 가져오는 부분. 필요 시, `UserService`에서 유저 정보 로드하는 로직 추가 가능
-            if let user = UserService.shared.user { // 예시로 하나의 유저 정보를 사용
-                userMap[ownerId] = user
+        
+        // 모든 트레이드 소유자에 대해 사용자 정보 불러오기
+        for (ownerId, _) in grouped {
+            // ownerId에 해당하는 유저 정보를 UserService에서 가져오기
+            fetchUserById(ownerId: ownerId)
+        }
+    }
+
+    // OwnerId에 해당하는 사용자 정보 로드
+    private func fetchUserById(ownerId: String) {
+        UserService.shared.fetchUserById(ownerId) { user in
+            if let user = user {
+                self.userMap[ownerId] = user
+            } else {
+                print("❌ 사용자 정보 로드 실패: \(ownerId)")
             }
         }
     }

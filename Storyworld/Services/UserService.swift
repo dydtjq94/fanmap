@@ -359,4 +359,29 @@ class UserService: ObservableObject {
         self.saveUser(user) // ✅ UserDefaults & Firestore에 업데이트
     }
     
+    func fetchUserById(_ userId: String, completion: @escaping (User?) -> Void) {
+        // 여기서는 Firestore에서 유저 정보를 가져오는 예시로 작성합니다.
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).getDocument { document, error in
+            if let error = error {
+                print("❌ 유저 정보 불러오기 실패: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            if let document = document, document.exists {
+                do {
+                    let user = try document.data(as: User.self)
+                    completion(user)
+                } catch {
+                    print("❌ User 디코딩 실패: \(error.localizedDescription)")
+                    completion(nil)
+                }
+            } else {
+                print("❌ 해당 ID의 유저가 존재하지 않습니다.")
+                completion(nil)
+            }
+        }
+    }
+    
 }

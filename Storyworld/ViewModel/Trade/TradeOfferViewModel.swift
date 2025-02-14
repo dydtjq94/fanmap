@@ -18,16 +18,16 @@ class TradeOfferViewModel: ObservableObject {
 
     private let db = Firestore.firestore()
 
-    // 받은 거래 요청을 로드하는 함수
     func loadReceivedOffers() {
         guard let currentUserId = UserService.shared.user?.id else {
             print("❌ 유저 정보가 없습니다.")
             return
         }
 
-        // `tradeOffers` 컬렉션에서 `tradeOwnerId`가 현재 사용자 ID인 거래 제안들을 불러옴
+        // `tradeOffers` 컬렉션에서 `tradeOwnerId`가 현재 사용자 ID인 거래 제안들 중, `status`가 'pending'인 것만 가져옴
         db.collectionGroup("tradeOffers")
             .whereField("tradeOwnerId", isEqualTo: currentUserId)
+            .whereField("status", isEqualTo: "pending") // 상태가 'pending'인 거래만 가져옴
             .getDocuments { snapshot, error in
                 if let error = error {
                     print("❌ 받은 요청 로딩 실패: \(error.localizedDescription)")
@@ -92,32 +92,67 @@ class TradeOfferViewModel: ObservableObject {
     }
     
     // ✅ 트레이드 수락 (Accept)
-       func acceptOffer(offer: TradeOffer) {
-           TradeService.shared.acceptTradeOffer(offer: offer) { result in
-               switch result {
-               case .success:
-                   print("✅ 트레이드 수락 성공")
-                   DispatchQueue.main.async {
-                       self.offers.removeAll { $0.id == offer.id } // 수락된 오퍼 제거
-                   }
-               case .failure(let error):
-                   print("❌ 트레이드 수락 실패: \(error.localizedDescription)")
-               }
-           }
-       }
+    func acceptOffer(offer: TradeOffer) {
+        TradeService.shared.acceptTradeOffer(offer: offer) { result in
+            switch result {
+            case .success:
+                print("✅ 트레이드 수락 성공")
+                
+                // Firestore에서 tradeOffers 문서 상태를 'accepted'로 업데이트
+                let db = Firestore.firestore()
+                db.collection("trades")
+                    .document(offer.tradeId)
+                    .collection("tradeOffers")
+                    .document(offer.id) // 해당 offer 문서 업데이트
+                    .updateData(["status": "accepted"]) { error in
+                        if let error = error {
+                            print("❌ 트레이드 오퍼 상태 업데이트 실패: \(error.localizedDescription)")
+                        } else {
+                            print("✅ 트레이드 오퍼 상태 'accepted'로 업데이트 완료")
+                        }
+                    }
+                
+                // 해당 오퍼는 `offers`에서 삭제
+                DispatchQueue.main.async {
+                    self.offers.removeAll { $0.id == offer.id }
+                }
 
-       // ✅ 트레이드 거절 (Reject)
-       func rejectOffer(offer: TradeOffer) {
-           TradeService.shared.rejectTradeOffer(offer: offer) { result in
-               switch result {
-               case .success:
-                   print("❌ 트레이드 거절 성공")
-                   DispatchQueue.main.async {
-                       self.offers.removeAll { $0.id == offer.id } // 거절된 오퍼 제거
-                   }
-               case .failure(let error):
-                   print("❌ 트레이드 거절 실패: \(error.localizedDescription)")
-               }
-           }
-       }
+            case .failure(let error):
+                print("❌ 트레이드 수락 실패: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    // ✅ 트레이드 거절 (Reject)
+    func rejectOffer(offer: TradeOffer) {
+        TradeService.shared.rejectTradeOffer(offer: offer) { result in
+            switch result {
+            case .success:
+                print("❌ 트레이드 거절 성공")
+                
+                // Firestore에서 tradeOffers 문서 상태를 'rejected'로 업데이트
+                let db = Firestore.firestore()
+                db.collection("trades")
+                    .document(offer.tradeId)
+                    .collection("tradeOffers")
+                    .document(offer.id) // 해당 offer 문서 업데이트
+                    .updateData(["status": "rejected"]) { error in
+                        if let error = error {
+                            print("❌ 트레이드 오퍼 상태 업데이트 실패: \(error.localizedDescription)")
+                        } else {
+                            print("✅ 트레이드 오퍼 상태 'rejected'로 업데이트 완료")
+                        }
+                    }
+                
+                // 해당 오퍼는 `offers`에서 삭제
+                DispatchQueue.main.async {
+                    self.offers.removeAll { $0.id == offer.id }
+                }
+
+            case .failure(let error):
+                print("❌ 트레이드 거절 실패: \(error.localizedDescription)")
+            }
+        }
+    }
+
 }
