@@ -10,12 +10,11 @@ import SwiftUI
 
 struct TradeItemView: View {
     let trade: Trade
-//    @State private var showingDetail = false
     
     var body: some View {
         NavigationLink(destination: TradeVideoView(trade: trade)) {
             HStack(alignment: .top) {
-                // 썸네일 (유튜브 이미지 URL 예시)
+//                 썸네일 (유튜브 이미지 URL 예시)
                 AsyncImage(url: URL(string: "https://img.youtube.com/vi/\(trade.video.videoId)/mqdefault.jpg")) { image in
                     image
                         .resizable()
@@ -51,6 +50,7 @@ struct TradeItemView: View {
                     
                     // 희귀도 배지
                     RarityBadgeView(rarity: trade.video.rarity)
+                        .padding(.top, 2)
                 }
                 Spacer()
             }

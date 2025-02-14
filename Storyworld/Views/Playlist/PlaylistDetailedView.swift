@@ -154,12 +154,13 @@ struct PlaylistDetailedView: View {
                             sheetManager.presentAddVideoSheet()
                         }) {
                             Text("영상 추가")
-                                .font(.headline)
+                                .font(.system(size: 16, weight: .black))
                                 .foregroundColor(.black)
-                                .frame(width: 180, height: 50)
+                                .frame(width: 180, height: 48)
                                 .background(Color(AppColors.mainColor))
                                 .cornerRadius(32)
                                 .shadow(radius: 4)
+                                .shadow(color: Color(AppColors.mainColor).opacity(0.3), radius: 10, x: 0, y: 0)
                         }
                         Spacer()
                     }

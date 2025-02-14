@@ -8,28 +8,36 @@
 import SwiftUI
 
 struct TradeTab: View {
-    @State private var showingManageTrading = false // ✅ 트레이드 관리 시트
-    @State private var showingTradingOffers = false // ✅ 받은 트레이드(알림) 시트
-    
+    @State private var showingManageTrading = false
+    @State private var showingTradingOffers = false
+    @StateObject private var tradeViewModel = TradeViewModel() // ✅ ViewModel 추가
+
     var body: some View {
-        ZStack(alignment: .bottom) { // ✅ 버튼을 하단에 고정
+        ZStack(alignment: .bottom) {
             ScrollView {
                 VStack(spacing: 16) {
-                    TradeView()
+                    TradeView(viewModel: tradeViewModel)
                 }
-                .padding(.horizontal, 16) // 좌우 패딩 적용
-                .padding(.bottom, 80) // ✅ 버튼과 겹치지 않도록 하단 여백 추가
+                .padding(.horizontal, 16)
+                .padding(.bottom, 80)
                 .padding(.top, 16)
             }
+            .refreshable {
+                print("🔄 TradeTab 새로고침 실행")
+                tradeViewModel.loadTrades()
+            }
             .background(Color(UIColor(hex:"#121212")))
+            
             .toolbar {
-                // 🔔 알림 버튼 (받은 트레이드 보기)
+                // 🔔 받은 트레이드 보기 (알림 버튼)
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         UIImpactFeedbackGenerator.trigger(.light)
-                        showingTradingOffers.toggle() // ✅ 받은 트레이드 보기
+                        showingTradingOffers.toggle()
                     }) {
-                        Image(systemName: "bell") // 🔔 알림 아이콘
+                        ZStack {
+                            Image(systemName: "tray") // 기본 아이콘
+                        }
                     }
                 }
             }
@@ -37,17 +45,18 @@ struct TradeTab: View {
             // ✅ 트레이드 관리 버튼 (하단 고정)
             Button(action: {
                 UIImpactFeedbackGenerator.trigger(.light)
-                showingManageTrading.toggle() // ✅ 트레이드 등록/관리로 이동
+                showingManageTrading.toggle()
             }) {
-                Text("트레이드 등록")
-                    .font(.headline)
+                Text("새 트레이드 등록")
+                    .font(.system(size: 16, weight: .black))
                     .foregroundColor(.black)
-                    .frame(width: 180, height: 50)
+                    .frame(width: 180, height: 48)
                     .background(Color(AppColors.mainColor))
                     .cornerRadius(32)
                     .shadow(radius: 4)
+                    .shadow(color: Color(AppColors.mainColor).opacity(0.3), radius: 10, x: 0, y: 0)
             }
-            .padding(.bottom, 24) // 하단 여백 추가
+            .padding(.bottom, 24)
         }
         // ✅ "트레이드 등록" 버튼 → `ManageTradingView()`
         .sheet(isPresented: $showingManageTrading) {

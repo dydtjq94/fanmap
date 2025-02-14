@@ -132,12 +132,13 @@ struct TradeVideoView: View {
                             showTradeOfferSheet = true
                         }) {
                             Text("트레이드 신청하기")
-                                .font(.headline)
+                                .font(.system(size: 16, weight: .black))
                                 .foregroundColor(.black)
-                                .frame(width: 180, height: 50)
+                                .frame(width: 180, height: 48)
                                 .background(Color(AppColors.mainColor))
                                 .cornerRadius(32)
                                 .shadow(radius: 4)
+                                .shadow(color: Color(AppColors.mainColor).opacity(0.3), radius: 10, x: 0, y: 0)
                         }
                         .sheet(isPresented: $showTradeOfferSheet) {
                             TradeOfferView(trade: trade, tradeStatus: $tradeStatus) // ✅ 트레이드 상태 바인딩
@@ -167,7 +168,7 @@ struct TradeVideoView: View {
     
     // ✅ Firestore에서 트레이드 상태 업데이트 감지
     private func listenForTradeStatusUpdates() {
-        let tradeRef = Firestore.firestore().collection("users").document(trade.ownerId).collection("myTrades").document(trade.id)
+        let tradeRef = Firestore.firestore().collection("trades").document(trade.id) // 변경된 부분
         
         tradeRef.addSnapshotListener { snapshot, error in
             guard let snapshot = snapshot, let data = snapshot.data(),
@@ -175,7 +176,7 @@ struct TradeVideoView: View {
                   let newStatus = TradeStatus(rawValue: statusString) else { return }
             
             DispatchQueue.main.async {
-                tradeStatus = newStatus
+                tradeStatus = newStatus // 상태 변경에 맞게 UI를 업데이트
             }
         }
     }

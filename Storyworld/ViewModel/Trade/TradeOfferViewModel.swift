@@ -7,103 +7,117 @@
 
 
 import SwiftUI
-import FirebaseFirestore
 import FirebaseAuth
 
+import FirebaseFirestore
+
 class TradeOfferViewModel: ObservableObject {
-    @Published var offers: [TradeOffer] = []
-    @Published var userMap: [String: User] = [:] // ✅ 제안자의 유저 정보 캐싱
-    
+    @Published var offers: [TradeOffer] = []  // 받은 트레이드 요청
+    @Published var tradeMap: [String: Trade] = [:] // tradeId -> Trade 매핑 저장
+    @Published var userMap: [String: User] = [:]  // proposerId -> User 매핑 저장
+
     private let db = Firestore.firestore()
-    
-    /// ✅ 오퍼 수락 (거래 완료)
-    func acceptOffer(offer: TradeOffer) {
-        guard let offerId = offer.id else { return } // ✅ `offerId`가 없으면 실행하지 않음
-        
-        TradeService.shared.acceptOffer(for: offer.trade, offerId: offerId) { success in
-            if success {
-                DispatchQueue.main.async {
-                    self.offers.removeAll { $0.id == offerId } // ✅ 해당 오퍼 삭제
-                }
-            }
-        }
-    }
-    
-    /// ✅ 오퍼 거절 (거래 취소)
-    func rejectOffer(offer: TradeOffer) {
-        guard let offerId = offer.id else { return } // ✅ `offerId`가 없으면 실행하지 않음
-        
-        TradeService.shared.rejectOffer(for: offer.trade, offerId: offerId) { success in
-            if success {
-                DispatchQueue.main.async {
-                    self.offers.removeAll { $0.id == offerId } // ✅ 해당 오퍼 삭제
-                }
-            }
-        }
-    }
-    
+
+    // 받은 거래 요청을 로드하는 함수
     func loadReceivedOffers() {
-        guard let userId = Auth.auth().currentUser?.uid else { return }
-        
-        let userTradesRef = db.collection("users").document(userId).collection("myTrades")
-        
-        userTradesRef.whereField("tradeStatus", isEqualTo: "pending").getDocuments { snapshot, error in
-            if let error = error {
-                print("❌ [loadReceivedOffers] 내 트레이드 가져오기 실패: \(error.localizedDescription)")
-                return
-            }
-            
-            var allOffers: [TradeOffer] = []
-            let group = DispatchGroup()
-            
-            for document in snapshot!.documents {
-                let tradeId = document.documentID
-                let offersRef = userTradesRef.document(tradeId).collection("offer")
-                
-                group.enter()
-                offersRef.getDocuments { offerSnapshot, offerError in
-                    if let offerError = offerError {
-                        print("⚠️ [loadReceivedOffers] Offer 가져오기 실패: \(offerError.localizedDescription)")
-                        group.leave()
-                        return
+        guard let currentUserId = UserService.shared.user?.id else {
+            print("❌ 유저 정보가 없습니다.")
+            return
+        }
+
+        // `tradeOffers` 컬렉션에서 `tradeOwnerId`가 현재 사용자 ID인 거래 제안들을 불러옴
+        db.collectionGroup("tradeOffers")
+            .whereField("tradeOwnerId", isEqualTo: currentUserId)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ 받은 요청 로딩 실패: \(error.localizedDescription)")
+                    return
+                }
+
+                if let snapshot = snapshot {
+                    self.offers = snapshot.documents.compactMap { document in
+                        try? document.data(as: TradeOffer.self)
                     }
+                    print("✅ 받은 요청 \(self.offers.count)개 로드 완료")
+
+                    // 🔥 tradeId를 통해 Trade 정보 가져오기
+                    self.loadTradeDetails()
                     
-                    for doc in offerSnapshot!.documents {
-                        if let tradeOffer = try? doc.data(as: TradeOffer.self) {
-                            allOffers.append(tradeOffer)
-                        } else {
-                            print("❌ [loadReceivedOffers] Offer 데이터 디코딩 실패 (tradeId: \(tradeId), offerId: \(doc.documentID))")
+                    // 🔥 proposerId를 통해 사용자 정보 가져오기
+                    self.loadProposerInfo()
+                }
+            }
+    }
+
+    // 🔥 Trade ID를 통해 Trade 정보 불러오기
+    private func loadTradeDetails() {
+        let tradeIds = Set(offers.map { $0.tradeId }) // 중복 제거
+
+        for tradeId in tradeIds {
+            db.collection("trades").document(tradeId).getDocument { document, error in
+                if let error = error {
+                    print("❌ Trade 정보 가져오기 실패 (\(tradeId)): \(error.localizedDescription)")
+                    return
+                }
+                if let document = document, document.exists {
+                    if let trade = try? document.data(as: Trade.self) {
+                        DispatchQueue.main.async {
+                            self.tradeMap[tradeId] = trade
                         }
                     }
-                    
-                    group.leave()
                 }
             }
-            
-            group.notify(queue: .main) {
-                self.offers = allOffers
-                print("✅ 받은 트레이드 요청 불러오기 완료: \(self.offers.count)개")
-                
-                self.cacheProposerUsers() // ✅ 받은 오퍼 처리 후, 제안자 정보 캐싱 실행
+        }
+    }
+
+    // 🔥 proposerId를 기반으로 Firestore에서 사용자 정보 가져오기
+    private func loadProposerInfo() {
+        let proposerIds = Set(offers.map { $0.proposerId }) // 중복 제거
+
+        for proposerId in proposerIds {
+            db.collection("users").document(proposerId).getDocument { document, error in
+                if let error = error {
+                    print("❌ 사용자 정보 가져오기 실패 (\(proposerId)): \(error.localizedDescription)")
+                    return
+                }
+                if let document = document, document.exists {
+                    if let user = try? document.data(as: User.self) {
+                        DispatchQueue.main.async {
+                            self.userMap[proposerId] = user
+                        }
+                    }
+                }
             }
         }
     }
     
-    /// ✅ 제안자의 유저 정보 캐싱 (캐시 + Firestore)
-    private func cacheProposerUsers() {
-        let proposerIds = Set(offers.map { $0.proposerId })
-        
-        for proposerId in proposerIds {
-            if userMap[proposerId] != nil { continue } // ✅ 이미 있으면 생략
-            
-            UserService.shared.fetchUserById(proposerId) { [weak self] user in
-                guard let self = self, let user = user else { return }
-                
-                DispatchQueue.main.async {
-                    self.userMap[proposerId] = user // ✅ `userMap` 즉시 반영
-                    print("✅ [cacheProposerUsers] 제안자 정보 캐싱 완료: \(user.nickname)")
-                }
-            }
-        }
-    }
+    // ✅ 트레이드 수락 (Accept)
+       func acceptOffer(offer: TradeOffer) {
+           TradeService.shared.acceptTradeOffer(offer: offer) { result in
+               switch result {
+               case .success:
+                   print("✅ 트레이드 수락 성공")
+                   DispatchQueue.main.async {
+                       self.offers.removeAll { $0.id == offer.id } // 수락된 오퍼 제거
+                   }
+               case .failure(let error):
+                   print("❌ 트레이드 수락 실패: \(error.localizedDescription)")
+               }
+           }
+       }
+
+       // ✅ 트레이드 거절 (Reject)
+       func rejectOffer(offer: TradeOffer) {
+           TradeService.shared.rejectTradeOffer(offer: offer) { result in
+               switch result {
+               case .success:
+                   print("❌ 트레이드 거절 성공")
+                   DispatchQueue.main.async {
+                       self.offers.removeAll { $0.id == offer.id } // 거절된 오퍼 제거
+                   }
+               case .failure(let error):
+                   print("❌ 트레이드 거절 실패: \(error.localizedDescription)")
+               }
+           }
+       }
 }

@@ -25,7 +25,7 @@ class CollectionService {
     private let userService = UserService.shared
     
     init() {
-        userService.initializeUserIfNeeded()
+        //        userService.initializeUserIfNeeded()
     }
     
     func fetchRandomVideoByGenre(genre: VideoGenre, rarity: VideoRarity, completion: @escaping (Result<Video, Error>) -> Void) {
@@ -282,5 +282,62 @@ class CollectionService {
             print("✅ \(coinAmount) 코인 지급 완료!")
             completion(true)
         }
+    }
+    
+    func updateUserDefaultsForAcceptedTrade(tradeOffer: TradeOffer) {
+        var collectedVideos = UserDefaults.standard.loadCollectedVideos()
+        
+        let tradeRef = Firestore.firestore().collection("trades").document(tradeOffer.tradeId)
+
+        // 🔥 Firestore에서 `tradeId`로 `Trade` 정보 가져오기
+        tradeRef.getDocument { document, error in
+            if let error = error {
+                print("❌ Trade 정보 가져오기 실패: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let document = document, document.exists,
+                  let trade = try? document.data(as: Trade.self) else {
+                print("❌ Trade 문서가 없거나 디코딩 실패")
+                return
+            }
+
+            // 1️⃣ 제안한 사람의 영상 삭제
+            collectedVideos.removeAll { video in
+                tradeOffer.offeredVideos.contains { $0.videoId == video.video.videoId }
+            }
+
+            // 2️⃣ 트레이드된 영상 추가 (수락한 사용자에게 추가)
+            let newCollectedVideo = CollectedVideo(
+                id: trade.video.videoId,
+                video: trade.video,
+                collectedDate: Date(),
+                tradeStatus: .available,
+                isFavorite: false,
+                ownerId: UserService.shared.user?.id ?? "unknown"
+            )
+            collectedVideos.append(newCollectedVideo)
+
+            // 3️⃣ UserDefaults 업데이트
+            UserDefaults.standard.saveCollectedVideos(collectedVideos)
+            print("✅ UserDefaults - 트레이드 수락 후 업데이트 완료")
+        }
+    }
+
+    
+    // ✅ 트레이드 거절 후 UserDefaults 업데이트
+    func updateUserDefaultsForRejectedTrade(tradeOffer: TradeOffer) {
+        var collectedVideos = UserDefaults.standard.loadCollectedVideos()
+        
+        // 제안한 모든 영상의 tradeStatus를 다시 available로 변경
+        for i in 0..<collectedVideos.count {
+            if tradeOffer.offeredVideos.contains(where: { $0.videoId == collectedVideos[i].video.videoId }) {
+                collectedVideos[i].tradeStatus = .available
+            }
+        }
+        
+        // UserDefaults 업데이트
+        UserDefaults.standard.saveCollectedVideos(collectedVideos)
+        print("❌ UserDefaults - 트레이드 거절 후 업데이트 완료")
     }
 }

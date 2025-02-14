@@ -94,11 +94,11 @@ class LoginService: ObservableObject {
             userService.saveUser(newUser)
         }
         
-        // ✅ Firestore → UserDefaults로 collectedVideos 동기화
-        await CollectionService.shared.syncCollectedVideosWithFirestore()
-        
-        // ✅ Firestore → UserDefaults로 `playlists` 동기화 (새로 추가)
-        await PlaylistService.shared.syncPlaylistsWithFirestore()
+//        // ✅ Firestore → UserDefaults로 collectedVideos 동기화
+//        await CollectionService.shared.syncCollectedVideosWithFirestore()
+//        
+//        // ✅ Firestore → UserDefaults로 `playlists` 동기화 (새로 추가)
+//        await PlaylistService.shared.syncPlaylistsWithFirestore()
         
         DispatchQueue.main.async { [weak self] in
             self?.isUserInitialized = true
@@ -308,11 +308,11 @@ class LoginService: ObservableObject {
         do {
             print("🕒 Firestore 데이터 동기화 중...")
             
-            // ✅ 1. Firestore에서 collectedVideos 가져오기
-            await CollectionService.shared.syncCollectedVideosWithFirestore()
-            
-            // ✅ 2. Firestore에서 playlists 가져오기
-            await PlaylistService.shared.syncPlaylistsWithFirestore()
+//            // ✅ 1. Firestore에서 collectedVideos 가져오기
+//            await CollectionService.shared.syncCollectedVideosWithFirestore()
+//            
+//            // ✅ 2. Firestore에서 playlists 가져오기
+//            await PlaylistService.shared.syncPlaylistsWithFirestore()
             
             // ✅ 데이터가 다 불러와질 때까지 0.5초 대기
             try await Task.sleep(nanoseconds: 500_000_000) // 0.5초 대기

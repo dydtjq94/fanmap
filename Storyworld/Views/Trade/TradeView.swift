@@ -8,10 +8,9 @@
 import SwiftUI
 
 struct TradeView: View {
-    @StateObject private var viewModel = TradeViewModel()
+    @ObservedObject var viewModel = TradeViewModel()
     
     var body: some View {
-        
         VStack(alignment: .leading, spacing: 16) {
             let grouped = Dictionary(grouping: viewModel.trades, by: { $0.ownerId })
             
@@ -45,7 +44,7 @@ struct TradeView: View {
         }
         .frame(maxWidth: .infinity)
         .onAppear {
-            viewModel.loadRecentTrades()
+            viewModel.loadTrades() // 트레이드 로드 호출
         }
     }
     

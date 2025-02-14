@@ -60,7 +60,7 @@ struct ContentView: View {
             UITabBar.appearance().unselectedItemTintColor = UIColor(hex: "#434343") // ✅ 비활성화 아이콘 색
             UITabBar.appearance().tintColor = .white // ✅ 활성화 아이콘 색
             
-            userService.initializeUserIfNeeded()
+//            userService.initializeUserIfNeeded()
         }
         
         .onChange(of: selectedTab) {

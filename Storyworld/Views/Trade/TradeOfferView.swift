@@ -102,16 +102,18 @@ struct TradeOfferView: View {
                         Spacer()
                         
                         Button(action: {
-                            UIImpactFeedbackGenerator.trigger(.light)
-                            submitTradeOffer()
+                            // 제안하기 버튼 클릭 시
+                            isSubmitting = true
+                            submitTradeOffer() // 제안 전송
                         }) {
                             Text("제안하기")
-                                .font(.headline)
+                                .font(.system(size: 16, weight: .black))
                                 .foregroundColor(.black)
-                                .frame(width: 180, height: 50)
+                                .frame(width: 180, height: 48)
                                 .background(Color(AppColors.mainColor))
                                 .cornerRadius(32)
                                 .shadow(radius: 4)
+                                .shadow(color: Color(AppColors.mainColor).opacity(0.3), radius: 10, x: 0, y: 0)
                         }
                         .cornerRadius(8)
                         .padding(.bottom, 12)
@@ -140,7 +142,7 @@ struct TradeOfferView: View {
         }
     }
     
-    /// ✅ 선택된 영상 추가/제거
+    // ✅ 선택된 영상 추가/제거
     func toggleSelection(_ vid: CollectedVideo) {
         withAnimation { // 🔥 애니메이션 효과 추가
             if selectedVideoIds.contains(vid.id) {
@@ -154,29 +156,33 @@ struct TradeOfferView: View {
             }
         }
     }
-    
-    func submitTradeOffer() {
-        guard let currentUser = Auth.auth().currentUser else { return }
-        guard !selectedVideos.isEmpty else { return } // ✅ 선택한 영상이 없으면 실행 안 함
-        
-        isSubmitting = true // ✅ 로딩 상태 활성화
-        
-        TradeService.shared.createOffer(for: trade, offeredVideos: selectedVideos.map { $0.video }, proposerId: currentUser.uid) { success in
 
-            DispatchQueue.main.async {
-                self.isSubmitting = false // ✅ 로딩 종료
+    func submitTradeOffer() {
+        guard let proposerId = UserService.shared.user?.id else {
+            print("❌ 제안자 정보 없음")
+            return
+        }
+
+        // 제안된 영상 목록이 비어있지 않은지 확인
+        if selectedVideos.isEmpty {
+            print("❌ 선택된 영상이 없습니다.")
+            return
+        }
+
+        // 트레이드 제안 생성
+        TradeService.shared.createTradeOffer(
+            trade: trade,
+            offeredVideos: selectedVideos.map { $0.video },
+            proposerId: proposerId) { result in
+                isSubmitting = false  // 요청 후 상태 복구
                 
-                let generator = UINotificationFeedbackGenerator()
-                
-                if success {
-                    generator.notificationOccurred(.success) // ✅ 성공 진동 피드백
-                    tradeStatus = .pending // ✅ 상태 업데이트
-                    presentationMode.wrappedValue.dismiss()
-                } else {
-                    generator.notificationOccurred(.error) // ✅ 실패 진동 피드백
-                    print("❌ [submitTradeOffer] 트레이드 제안 실패")
+                switch result {
+                case .success(let offerId):
+                    print("✅ 트레이드 제안 성공, 제안 ID: \(offerId)")
+                    presentationMode.wrappedValue.dismiss() // 제안 후 화면 닫기
+                case .failure(let error):
+                    print("❌ 트레이드 제안 실패: \(error.localizedDescription)")
                 }
             }
-        }
     }
 }

@@ -15,142 +15,7 @@ class UserService: ObservableObject {
     static let shared = UserService()
     @Published var user: User?
     
-    private init() {
-        loadUserCache() // ✅ 앱 실행 시 캐시 불러오기
-    }
-
     private let db = Firestore.firestore()
-    private let cacheKey = "cachedUsers"
-    private let timeToLive: TimeInterval = 12 * 60 * 60 // 12시간 (초 단위)
-    
-    /// ✅ UserDefaults에서 불러온 유저 캐시
-    private var cachedUsers: [String: UserCacheEntry] = [:] {
-        didSet { saveUsersToCache(users: cachedUsers.values.map { $0.user }) }
-    }
-
-    // MARK: - 📌 최신 20명의 유저 가져오기 (캐시에 저장)
-    
-    /// 유저를 가져와 12시간 캐시에 저장
-    func fetchRecentUsers(limit: Int = 20, completion: @escaping ([User]) -> Void) {
-        db.collection("users")
-            .order(by: "tradeUpdated", descending: true) // ✅ 최신 활동순 정렬
-            .limit(to: limit)
-            .getDocuments { snapshot, error in
-                if let error = error {
-                    print("❌ [fetchRecentUsers] 유저 가져오기 오류: \(error.localizedDescription)")
-                    completion([])
-                    return
-                }
-                
-                guard let documents = snapshot?.documents else {
-                    completion([])
-                    return
-                }
-                
-                let users: [User] = documents.compactMap { try? $0.data(as: User.self) }
-                print("✅ 최신 \(users.count)명의 유저 가져오기 완료!")
-
-                // ✅ 유저 데이터를 12시간 캐시에 저장
-                self.saveUsersToCache(users: users)
-                
-                completion(users)
-            }
-    }
-    
-    // MARK: - 📌 캐시 관리 (UserDefaults)
-
-    /// ✅ 기존 캐시를 유지하면서 최신 데이터만 갱신 (중복 방지)
-    private func saveUsersToCache(users: [User]) {
-        let encoder = JSONEncoder()
-        
-        /// 1️⃣ 기존 캐시 불러오기
-        var cachedUsers: [String: UserCacheEntry] = loadUserCache() // ✅ 올바른 타입으로 초기화!
-
-        
-        // 2️⃣ 중복 제거: 가져온 유저 목록에서 동일한 userId가 여러 번 저장되지 않도록 `Set` 사용
-        let uniqueUsers = Dictionary(uniqueKeysWithValues: users.map { ($0.id, $0) })
-
-        // 3️⃣ 기존 캐시에 최신 데이터 업데이트
-        for (userId, user) in uniqueUsers {
-            cachedUsers[userId] = UserCacheEntry(user: user, fetchedAt: Date()) // ✅ 기존 데이터 유지하면서 최신 데이터만 업데이트
-            print("🔥 [saveUsersToCache] 캐시에 저장: \(user.nickname) (ID=\(userId)), 프로필: \(user.profileImageURL ?? "없음")")
-        }
-
-        // 4️⃣ 새로운 캐시 저장
-        if let encoded = try? encoder.encode(cachedUsers) {
-            UserDefaults.standard.set(encoded, forKey: cacheKey)
-            print("✅ [User Cache] \(cachedUsers.count)명의 유저 정보 저장 완료 (12시간 TTL)")
-        }
-    }
-
-
-    /// ✅ UserDefaults에서 유저 캐시 불러오기
-    private func loadUserCache() -> [String: UserCacheEntry] {
-        let decoder = JSONDecoder()
-
-        if let savedData = UserDefaults.standard.data(forKey: cacheKey),
-           let decoded = try? decoder.decode([String: UserCacheEntry].self, from: savedData) {
-
-            // 1️⃣ TTL(12시간) 초과된 캐시는 제거
-            let validCache = decoded.filter { Date().timeIntervalSince($0.value.fetchedAt) < timeToLive }
-            
-            print("✅ [User Cache] \(validCache.count)명의 유저 정보 복원 완료!")
-            return validCache // ✅ 반환값 추가!
-        }
-
-        print("⚠️ [User Cache] 저장된 캐시 없음 (최초 실행이거나 만료됨)")
-        return [:] // ✅ 빈 딕셔너리 반환!
-    }
-
-    // MARK: - 📌 개별 유저 정보 가져오기 (캐시 + Firestore)
-    func fetchUserById(_ userId: String, completion: @escaping (User?) -> Void) {
-        print("🔍 [fetchUserById] 요청된 userId: \(userId)")
-
-        // ✅ 캐시에서 유저 확인
-        if let cached = cachedUsers[userId] {
-            let elapsed = Date().timeIntervalSince(cached.fetchedAt)
-            if elapsed < timeToLive {
-                print("✅ [fetchUserById] 캐시 HIT! (userId=\(userId)), 닉네임: \(cached.user.nickname), 프로필: \(cached.user.profileImageURL ?? "없음")")
-                completion(cached.user)
-                return
-            } else {
-                print("⚠️ [fetchUserById] 캐시 만료됨, Firestore에서 다시 가져옴 (userId=\(userId))")
-                cachedUsers.removeValue(forKey: userId)
-            }
-        }
-
-        // ✅ Firestore 요청이 발생하는 경우만 로그 출력
-        print("🔥 [fetchUserById] Firestore에서 새 데이터 가져옴! (userId=\(userId))")
-
-        let userRef = db.collection("users").document(userId)
-        
-        userRef.getDocument { snapshot, error in
-            if let error = error {
-                print("❌ [fetchUserById] Firestore 에러: \(error.localizedDescription) (userId=\(userId))")
-                completion(nil)
-                return
-            }
-            
-            guard let snapshot = snapshot, snapshot.exists else {
-                print("⚠️ [fetchUserById] Firestore에서 해당 user 문서 없음 (userId=\(userId))")
-                completion(nil)
-                return
-            }
-            
-            do {
-                let fetchedUser = try snapshot.data(as: User.self)
-                
-                // ✅ Firestore에서 가져온 데이터를 캐시에 저장
-                self.cachedUsers[userId] = UserCacheEntry(user: fetchedUser, fetchedAt: Date())
-
-                print("🔥 [fetchUserById] Firestore에서 유저 정보 가져옴! (userId=\(userId)), 닉네임: \(fetchedUser.nickname), 프로필: \(fetchedUser.profileImageURL ?? "없음")")
-                completion(fetchedUser)
-            } catch {
-                print("❌ [fetchUserById] 디코딩 오류: \(error.localizedDescription) (userId=\(userId))")
-                completion(nil)
-            }
-        }
-    }
 
     private let userDefaultsKey = "currentUser"
     
@@ -164,8 +29,6 @@ class UserService: ObservableObject {
                 // ✅ Firestore에서 최신 유저 정보 동기화 + 컬렉션 & 플레이리스트 동기화
                 Task {
                     await self.fetchUserFromFirestore(userID: savedUser.id)
-                    await CollectionService.shared.syncCollectedVideosWithFirestore()
-                    await PlaylistService.shared.syncPlaylistsWithFirestore()
                 }
             } else {
                 print("⏩ 기존 유저 없음 (StartView 등에서 새 유저 생성 처리)")
@@ -206,15 +69,8 @@ class UserService: ObservableObject {
             
             print("✅ Firestore에서 유저 정보 가져옴: \(fetchedUser.nickname)")
             
-            // ✅ Firestore에서 collectedVideos & playlists 가져와서 UserDefaults에 저장
-            async let collectedVideos = fetchCollectedVideos(userRef: userRef)
-            async let playlists = fetchPlaylists(userRef: userRef)
-            
-            let userCollectedVideos = await collectedVideos
-            let userPlaylists = await playlists
-            
-            UserDefaults.standard.saveCollectedVideos(userCollectedVideos) // ✅ UserDefaults에 저장
-            UserDefaults.standard.savePlaylists(userPlaylists) // ✅ UserDefaults에 저장
+            await CollectionService.shared.syncCollectedVideosWithFirestore()
+            await PlaylistService.shared.syncPlaylistsWithFirestore()
 
             // ✅ 동기화된 유저 정보 로컬에 저장
             self.saveUserToLocal(fetchedUser)
